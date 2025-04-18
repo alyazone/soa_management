@@ -1,0 +1,62 @@
+<div class="col-md-2 bg-light sidebar">
+  <div class="sidebar-sticky pt-3">
+      <!-- Logo at the top of sidebar -->
+      <div class="text-center mb-4">
+          <img src="<?php echo (isset($basePath) ? $basePath : ''); ?>assets/images/logo.png" alt="KYROL Logo" class="sidebar-logo" width="120">
+      </div>
+      
+      <ul class="nav flex-column sidebar-nav">
+          <li class="nav-item">
+              <a class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'dashboard.php') ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>dashboard.php">
+                  <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/staff/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/staff/index.php">
+                  <i class="fas fa-users mr-2"></i> Staff Management
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/clients/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/clients/index.php">
+                  <i class="fas fa-building mr-2"></i> Client Management
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/suppliers/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/suppliers/index.php">
+                  <i class="fas fa-truck mr-2"></i> Supplier Management
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/soa/index.php">
+                  <i class="fas fa-file-invoice-dollar mr-2"></i> SOA Management
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/inventory/index.php">
+                  <i class="fas fa-boxes mr-2"></i> Inventory Management
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/documents/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/documents/index.php">
+                  <i class="fas fa-file-upload mr-2"></i> Document Upload
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/claims/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/claims/index.php">
+                  <i class="fas fa-receipt mr-2"></i> Claims Management
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/excel/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/excel/index.php">
+                  <i class="fas fa-file-excel mr-2"></i> Excel Integration
+              </a>
+          </li>
+      </ul>
+      
+      <!-- Version info at bottom of sidebar -->
+      <div class="mt-5 pt-5 small text-center text-muted">
+          <p>SOA Management v1.0</p>
+      </div>
+  </div>
+</div>
+<?php // No closing PHP tag to prevent whitespace issues ?>
