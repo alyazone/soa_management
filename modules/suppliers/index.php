@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // Set the base path for includes
 $basePath = '../../';
 
@@ -73,9 +74,15 @@ try {
         </div>
     </div>
     
-    <?php if(isset($_GET["success"]) && $_GET["success"] == "1"): ?>
+    <?php if(isset($_GET["success"])): ?>
         <div class="alert alert-success">
-            Supplier record has been deleted successfully.
+            <?php 
+                if($_GET["success"] == "1") {
+                    echo "Supplier record has been deleted successfully.";
+                } elseif($_GET["success"] == "2") {
+                    echo "Supplier record has been updated successfully.";
+                }
+            ?>
         </div>
     <?php endif; ?>
     
@@ -138,4 +145,5 @@ try {
 <?php
 // Include footer
 include_once $basePath . "includes/footer.php";
+ob_end_flush();
 ?>

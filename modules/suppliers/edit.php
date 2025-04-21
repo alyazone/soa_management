@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // Set the base path for includes
 $basePath = '../../';
 
@@ -86,7 +87,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             // Attempt to execute the prepared statement
             if($stmt->execute()){
                 // Records updated successfully. Redirect to landing page
-                header("location: index.php?success=1");
+                header("location: index.php?success=2");
                 exit();
             } else{
                 echo "Oops! Something went wrong. Please try again later.";
@@ -138,7 +139,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <h6 class="m-0 font-weight-bold text-primary">Supplier Information</h6>
         </div>
         <div class="card-body">
-            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"] . "?id=" . $_GET['id']); ?>" method="post">
                 <input type="hidden" name="id" value="<?php echo $_GET['id']; ?>">
                 <div class="form-group">
                     <label>Supplier Name</label>
@@ -177,4 +178,5 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 <?php
 // Include footer
 include_once $basePath . "includes/footer.php";
+ob_end_flush();
 ?>

@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // Set the base path for includes
 $basePath = '../../';
 

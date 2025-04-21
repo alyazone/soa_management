@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // Set the base path for includes
 $basePath = '../../';
 
@@ -73,10 +74,16 @@ try {
         </div>
     </div>
     
-    <?php if(isset($_GET["success"]) && $_GET["success"] == "1"): ?>
-        <div class="alert alert-success">
-            Client record has been deleted successfully.
-        </div>
+    <?php if(isset($_GET["success"])): ?>
+    <div class="alert alert-success">
+        <?php 
+            if($_GET["success"] == "1") {
+                echo "Client record has been deleted successfully.";
+            } elseif($_GET["success"] == "2") {
+                echo "Client record has been updated successfully.";
+            }
+        ?>
+    </div>
     <?php endif; ?>
     
     <?php if(isset($delete_err)): ?>
@@ -138,4 +145,5 @@ try {
 <?php
 // Include footer
 include_once $basePath . "includes/footer.php";
+ob_end_flush();
 ?>

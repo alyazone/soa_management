@@ -42,14 +42,14 @@
 }
 
 .sidebar-nav .nav-link:hover {
-  color: #007bff;
+  color: #12122e;
   background-color: rgba(0, 123, 255, 0.08);
   transform: translateX(3px);
 }
 
 .sidebar-nav .nav-link.active {
   color: #fff;
-  background-color: #007bff;
+  background-color: #12122e;
 }
 
 .sidebar-nav .nav-link.active i {
@@ -64,7 +64,7 @@
 }
 
 .sidebar-nav .nav-link:hover i {
-  color: #007bff;
+  color: #12122e;
 }
 
 .sidebar-nav .nav-link.active:hover {
@@ -299,8 +299,8 @@ body.login-page {
 }
 
 .login-form .custom-control-input:checked ~ .custom-control-label::before {
-  border-color: #007bff;
-  background-color: #007bff;
+  border-color: #12122e;
+  background-color: #12122e;
 }
 
 .login-form-title {

@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // Set the base path for includes
 $basePath = '../../';
 
@@ -61,4 +62,5 @@ try {
     header("location: index.php");
     exit();
 }
+ob_end_flush();
 ?>
