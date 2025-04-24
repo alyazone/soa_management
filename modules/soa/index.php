@@ -145,4 +145,5 @@ try {
 <?php
 // Include footer
 include_once $basePath . "includes/footer.php";
+ob_end_flush();
 ?>

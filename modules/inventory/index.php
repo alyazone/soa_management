@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // Set the base path for includes
 $basePath = '../../';
 
@@ -96,10 +97,19 @@ if(isset($_GET["action"]) && $_GET["action"] == "delete" && isset($_GET["id"]) &
         </div>
     </div>
     
-    <?php if(isset($_GET["success"]) && $_GET["success"] == "1"): ?>
-        <div class="alert alert-success">
-            Inventory item has been deleted successfully.
-        </div>
+    <!-- for display message -->
+    <?php if(isset($_GET["success"])): ?>
+            <div class="alert alert-success">
+                <?php 
+                    if($_GET["success"] == "1") {
+                        echo "Inventory item has been deleted successfully.";
+                    } elseif($_GET["success"] == "2") {
+                        echo "Inventory item has been updated successfully.";
+                    } elseif($_GET["success"] == "3") {
+                        echo "Inventory item has been added successfully.";
+                    }
+                ?>
+            </div>
     <?php endif; ?>
     
     <?php if(isset($delete_err)): ?>
@@ -301,4 +311,5 @@ document.getElementById('searchInput').addEventListener('keyup', function() {
 <?php
 // Include footer
 include_once $basePath . "includes/footer.php";
+ob_end_flush();
 ?>

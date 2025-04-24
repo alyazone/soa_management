@@ -50,11 +50,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $category_id = $_POST["category_id"];
     }
     
-    // Validate supplier
-    if(empty($_POST["supplier_id"])){
-        $supplier_id_err = "Please select supplier.";
-    } else{
+    // Validate supplier (optional)
+    if(!empty($_POST["supplier_id"])){
         $supplier_id = $_POST["supplier_id"];
+    } else {
+        $supplier_id = null;
     }
     
     // Validate serial number (optional)
@@ -96,7 +96,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $notes = trim($_POST["notes"]);
     
     // Check input errors before inserting in database
-    if(empty($item_name_err) && empty($category_id_err) && empty($supplier_id_err) && 
+    if(empty($item_name_err) && empty($category_id_err) && 
        empty($purchase_date_err) && empty($purchase_price_err) && empty($status_err)){
         
         // Prepare an insert statement
@@ -109,7 +109,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             // Bind variables to the prepared statement as parameters
             $stmt->bindParam(":item_name", $param_item_name, PDO::PARAM_STR);
             $stmt->bindParam(":category_id", $param_category_id, PDO::PARAM_INT);
-            $stmt->bindParam(":supplier_id", $param_supplier_id, PDO::PARAM_INT);
+            if ($supplier_id === null) {
+                $stmt->bindValue(":supplier_id", null, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindParam(":supplier_id", $supplier_id, PDO::PARAM_INT);
+            }
             $stmt->bindParam(":serial_number", $param_serial_number, PDO::PARAM_STR);
             $stmt->bindParam(":model_number", $param_model_number, PDO::PARAM_STR);
             $stmt->bindParam(":purchase_date", $param_purchase_date, PDO::PARAM_STR);
@@ -123,7 +127,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             // Set parameters
             $param_item_name = $item_name;
             $param_category_id = $category_id;
-            $param_supplier_id = $supplier_id;
+            $param_supplier_id = $supplier_id; // This can now be NULL
             $param_serial_number = $serial_number;
             $param_model_number = $model_number;
             $param_purchase_date = $purchase_date;
@@ -151,7 +155,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 }
                 
                 // Records created successfully. Redirect to landing page
-                header("location: index.php?success=1");
+                header("location: index.php?success=3");
                 exit();
             } else{
                 echo "Oops! Something went wrong. Please try again later.";
@@ -219,17 +223,17 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                         <div class="form-row">
                             <div class="form-group col-md-6">
                                 <label>
-                                    <span class="text-danger">*</span> Supplier
+                                    Supplier <small class="text-muted">(Optional)</small>
                                 </label>
-                                <select name="supplier_id" class="form-control <?php echo (!empty($supplier_id_err)) ? 'is-invalid' : ''; ?>">
-                                    <option value="">Select Supplier</option>
+                                <select name="supplier_id" class="form-control">
+                                    <option value="">Select Supplier (Optional)</option>
                                     <?php foreach($suppliers as $supplier): ?>
                                         <option value="<?php echo $supplier['supplier_id']; ?>" <?php echo ($supplier_id == $supplier['supplier_id']) ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($supplier['supplier_name']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <span class="invalid-feedback"><?php echo $supplier_id_err; ?></span>
+                                <small class="form-text text-muted">Leave blank if no supplier is associated with this item.</small>
                             </div>
                             <div class="form-group col-md-6">
                                 <label>
@@ -321,6 +325,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         </div>
     </div>
 </div>
+
+<?php
+// Include footer
+include_once $basePath . "includes/footer.php";
+?>
+<?php
 // Flush the output buffer and send the content to the browser
 ob_end_flush();
 ?>

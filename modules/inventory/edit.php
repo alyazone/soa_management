@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // Set the base path for includes
 $basePath = '../../';
 
@@ -150,6 +151,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             
             // Attempt to execute the prepared statement
             if($stmt->execute()){
+                // Debug
+                echo "<div class='alert alert-info'>Update executed. Affected rows: " . $stmt->rowCount() . "</div>";
                 // If status has changed, create a transaction record
                 if($current_status != $status) {
                     $transaction_sql = "INSERT INTO inventory_transactions (item_id, transaction_type, from_status, to_status, transaction_date, notes, performed_by) 
@@ -165,10 +168,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 }
                 
                 // Records updated successfully. Redirect to view page
-                header("location: view.php?id=" . $id);
+                header("location: index.php?success=2");
                 exit();
             } else{
                 echo "Oops! Something went wrong. Please try again later.";
+                // Debug SQL error
+                echo "<div class='alert alert-danger'>SQL Error: " . print_r($stmt->errorInfo(), true) . "</div>";
             }
         }
         
@@ -226,7 +231,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <h6 class="m-0 font-weight-bold text-primary">Item Information</h6>
         </div>
         <div class="card-body">
-            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"] . "?id=" . $_GET['id']); ?>" method="post">
                 <input type="hidden" name="id" value="<?php echo $_GET['id']; ?>">
                 
                 <!-- Basic Information Section -->
@@ -371,4 +376,5 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 <?php
 // Include footer
 include_once $basePath . "includes/footer.php";
+ob_end_flush();
 ?>

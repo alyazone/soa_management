@@ -115,11 +115,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     }
     
     // Validate description
-    if(empty(trim($_POST["description"]))){
+    /*if(empty(trim($_POST["description"]))){
         $description_err = "Please enter description.";
     } else{
         $description = trim($_POST["description"]);
-    }
+    }*/
     
     // Validate balance amount
     if(empty(trim($_POST["balance_amount"]))){
@@ -332,7 +332,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 
                 <div class="form-group">
                     <label>
-                        <span class="text-danger">*</span> Description
+                        <!--span class="text-danger">*</span--> Description
                     </label>
                     <textarea name="description" class="form-control <?php echo (!empty($description_err)) ? 'is-invalid' : ''; ?>" rows="3"><?php echo $description; ?></textarea>
                     <span class="invalid-feedback"><?php echo $description_err; ?></span>
