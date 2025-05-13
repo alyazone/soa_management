@@ -19,7 +19,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     <link rel="stylesheet" href="<?php echo (isset($basePath) ? $basePath : ''); ?>assets/css/style.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" style="color: #004085;">
         <a class="navbar-brand" href="<?php echo (isset($basePath) ? $basePath : ''); ?>dashboard.php">
             KYROL SOA Management
         </a>

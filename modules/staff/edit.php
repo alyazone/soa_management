@@ -1,6 +1,7 @@
 <?php
 // Set the base path for includes
 $basePath = '../../';
+ob_start();
 
 // Include header and sidebar
 include_once $basePath . "includes/header.php";
@@ -288,4 +289,5 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 <?php
 // Include footer
 include_once $basePath . "includes/footer.php";
+ob_end_flush();
 ?>

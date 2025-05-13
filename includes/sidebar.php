@@ -34,30 +34,33 @@
             
             <!-- SOA Management Submenu -->
             <li class="nav-item">
-                <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'active' : ''; ?>" href="#" data-toggle="collapse" data-target="#soaSubmenu" aria-expanded="false">
+                <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? : ''; ?>" href="#" data-toggle="collapse" data-target="#soaSubmenu" aria-expanded="<?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'true' : 'false'; ?>">
                     <i class="fas fa-file-invoice-dollar mr-2"></i> SOA Management
                 </a>
-                <div class="collapse" id="soaSubmenu">
+                <div class="collapse <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'show' : ''; ?>" id="soaSubmenu">
                     <ul class="nav flex-column ml-3">
                         <li class="nav-item">
-                            <a class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'suppliers_soa.php') ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/soa/suppliers_soa.php">Supplier SOAs</a>
+                            <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/client') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/soa/client/index.php">
+                                <i class="fas fa-building mr-2"></i> Client SOA
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'clients_soa.php') ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/soa/clients_soa.php">Client SOAs</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'index.php') ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/soa/index.php">All SOAs</a>
+                            <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/supplier') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/soa/supplier/index.php">
+                                <i class="fas fa-truck mr-2"></i> Supplier SOA
+                            </a>
                         </li>
                     </ul>
                 </div>
             </li>
             <?php endif; ?>
             
+            <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
             <li class="nav-item">
                 <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/inventory/index.php">
                     <i class="fas fa-boxes mr-2"></i> Inventory Management
                 </a>
             </li>
+            <?php endif; ?>
             <li class="nav-item">
                 <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/documents/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/documents/index.php">
                     <i class="fas fa-file-upload mr-2"></i> Document Upload

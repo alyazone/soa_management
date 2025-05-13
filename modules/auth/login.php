@@ -136,7 +136,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
         
         .logo {
-            max-width: 300px;
+            max-width: 350px;
             filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
             transition: all 0.3s ease;
         }
@@ -429,7 +429,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             }
             
             .logo {
-                max-width: 250px;
+                max-width: 50px;
             }
             
             .management-title {
@@ -461,7 +461,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         <!-- Left section with logo and management console text -->
         <div class="left-section">
             <div class="logo-container">
-                <img src="../../assets/images/logo-login.png" alt="KYROL Security Labs Logo" class="logo">
+                <img src="../../assets/images/logo.png" alt="KYROL Security Labs Logo" class="logo">
             </div>
             <h2 class="management-title">KYROL MANAGEMENT CONSOLE</h2>
         </div>
