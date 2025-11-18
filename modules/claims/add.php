@@ -14,6 +14,7 @@ require_once $basePath . "config/database.php";
 $claim_month = date('F');
 $vehicle_type = "";
 $entries = [];
+$meal_entries = [];
 $vehicle_type_err = "";
 $entries_err = "";
 $total_amount = 0;
@@ -86,6 +87,27 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
     }
     
+    // Process meal entries
+    if(isset($_POST["meal_date"]) && is_array($_POST["meal_date"])){
+        $count = count($_POST["meal_date"]);
+        
+        for($i = 0; $i < $count; $i++){
+            if(!empty($_POST["meal_date"][$i]) && !empty($_POST["meal_type"][$i]) && 
+               !empty($_POST["meal_description"][$i]) && !empty($_POST["meal_amount"][$i])){
+                
+                $meal_entry = [
+                    'meal_date' => $_POST["meal_date"][$i],
+                    'meal_type' => $_POST["meal_type"][$i],
+                    'description' => $_POST["meal_description"][$i],
+                    'amount' => $_POST["meal_amount"][$i],
+                    'receipt_reference' => !empty($_POST["receipt_reference"][$i]) ? $_POST["receipt_reference"][$i] : ''
+                ];
+                
+                $meal_entries[] = $meal_entry;
+            }
+        }
+    }
+    
     if(empty($entries)){
         $entries_err = "Please add at least one travel entry.";
     }
@@ -94,11 +116,16 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $total_km = 0;
     $total_parking = 0;
     $total_toll = 0;
+    $total_meal = 0;
     
     foreach($entries as $entry){
         $total_km += floatval($entry['miles_traveled']);
         $total_parking += floatval($entry['parking_fee']);
         $total_toll += floatval($entry['toll_fee']);
+    }
+    
+    foreach($meal_entries as $meal){
+        $total_meal += floatval($meal['amount']);
     }
     
     // Calculate mileage reimbursement based on rates and position
@@ -145,7 +172,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
     }
     
-    $total_amount = $km_amount + $total_parking + $total_toll;
+    $total_amount = $km_amount + $total_parking + $total_toll + $total_meal;
     
     // Check input errors before inserting in database
     if(empty($vehicle_type_err) && empty($entries_err)){
@@ -154,8 +181,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             $pdo->beginTransaction();
             
             // Prepare an insert statement for the claim
-            $sql = "INSERT INTO claims (staff_id, claim_month, vehicle_type, description, amount, status, km_rate, total_km_amount, employee_signature, signature_date) 
-                    VALUES (:staff_id, :claim_month, :vehicle_type, :description, :amount, 'Pending', :km_rate, :total_km_amount, 1, CURDATE())";
+            $sql = "INSERT INTO claims (staff_id, claim_month, vehicle_type, description, amount, status, km_rate, total_km_amount, total_meal_amount, employee_signature, signature_date) 
+                    VALUES (:staff_id, :claim_month, :vehicle_type, :description, :amount, 'Pending', :km_rate, :total_km_amount, :total_meal_amount, 1, CURDATE())";
             
             if($stmt = $pdo->prepare($sql)){
                 // Set parameters
@@ -169,6 +196,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 $stmt->bindParam(":amount", $total_amount, PDO::PARAM_STR);
                 $stmt->bindParam(":km_rate", $km_rate, PDO::PARAM_STR);
                 $stmt->bindParam(":total_km_amount", $km_amount, PDO::PARAM_STR);
+                $stmt->bindParam(":total_meal_amount", $total_meal, PDO::PARAM_STR);
                 
                 // Execute the statement
                 if($stmt->execute()){
@@ -191,6 +219,90 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                         $entry_stmt->bindParam(":miles_traveled", $entry['miles_traveled'], PDO::PARAM_STR);
                         
                         $entry_stmt->execute();
+                    }
+                    
+                    // Insert meal entries if any
+                    if(!empty($meal_entries)) {
+                        $meal_sql = "INSERT INTO claim_meal_entries (claim_id, meal_date, meal_type, description, amount, receipt_reference) 
+                                    VALUES (:claim_id, :meal_date, :meal_type, :description, :amount, :receipt_reference)";
+                        
+                        $meal_stmt = $pdo->prepare($meal_sql);
+                        
+                        foreach($meal_entries as $meal){
+                            $meal_stmt->bindParam(":claim_id", $claim_id, PDO::PARAM_INT);
+                            $meal_stmt->bindParam(":meal_date", $meal['meal_date'], PDO::PARAM_STR);
+                            $meal_stmt->bindParam(":meal_type", $meal['meal_type'], PDO::PARAM_STR);
+                            $meal_stmt->bindParam(":description", $meal['description'], PDO::PARAM_STR);
+                            $meal_stmt->bindParam(":amount", $meal['amount'], PDO::PARAM_STR);
+                            $meal_stmt->bindParam(":receipt_reference", $meal['receipt_reference'], PDO::PARAM_STR);
+                            
+                            $meal_stmt->execute();
+                        }
+                    }
+                    
+                    // Handle file uploads if any
+                    $uploadedFiles = [];
+                    if (!empty($_FILES['receipt_files']['name'][0])) {
+                        // Create upload directory if it doesn't exist
+                        $uploadDir = $basePath . 'uploads/receipts/';
+                        if (!file_exists($uploadDir)) {
+                            mkdir($uploadDir, 0777, true);
+                        }
+                        
+                        // Process each uploaded file
+                        $fileCount = count($_FILES['receipt_files']['name']);
+                        for ($i = 0; $i < $fileCount; $i++) {
+                            if ($_FILES['receipt_files']['error'][$i] === UPLOAD_ERR_OK) {
+                                $tmpName = $_FILES['receipt_files']['tmp_name'][$i];
+                                $originalName = $_FILES['receipt_files']['name'][$i];
+                                $fileType = $_FILES['receipt_files']['type'][$i];
+                                $fileSize = $_FILES['receipt_files']['size'][$i];
+                                
+                                // Validate file type
+                                $allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+                                $fileExtension = pathinfo($originalName, PATHINFO_EXTENSION);
+                                
+                                if (!in_array($fileType, $allowedTypes) && 
+                                    !in_array(strtolower($fileExtension), ['pdf', 'jpg', 'jpeg', 'png'])) {
+                                    continue; // Skip invalid file types
+                                }
+                                
+                                // Validate file size (5MB max)
+                                if ($fileSize > 5 * 1024 * 1024) {
+                                    continue; // Skip files larger than 5MB
+                                }
+                                
+                                // Generate unique filename
+                                $newFileName = 'receipt_' . uniqid() . '_' . $claim_id . '.' . $fileExtension;
+                                $destination = $uploadDir . $newFileName;
+                                
+                                // Move uploaded file to destination
+                                if (move_uploaded_file($tmpName, $destination)) {
+                                    $uploadedFiles[] = [
+                                        'file_name' => $newFileName,
+                                        'original_name' => $originalName,
+                                        'file_type' => $fileType,
+                                        'file_size' => $fileSize
+                                    ];
+                                }
+                            }
+                        }
+                        
+                        // Insert file records into database
+                        if (!empty($uploadedFiles)) {
+                            $receiptSql = "INSERT INTO claim_receipts (claim_id, file_name, original_file_name, file_type, file_size) 
+                                          VALUES (:claim_id, :file_name, :original_file_name, :file_type, :file_size)";
+                            $receiptStmt = $pdo->prepare($receiptSql);
+                            
+                            foreach ($uploadedFiles as $file) {
+                                $receiptStmt->bindParam(':claim_id', $claim_id, PDO::PARAM_INT);
+                                $receiptStmt->bindParam(':file_name', $file['file_name'], PDO::PARAM_STR);
+                                $receiptStmt->bindParam(':original_file_name', $file['original_name'], PDO::PARAM_STR);
+                                $receiptStmt->bindParam(':file_type', $file['file_type'], PDO::PARAM_STR);
+                                $receiptStmt->bindParam(':file_size', $file['file_size'], PDO::PARAM_INT);
+                                $receiptStmt->execute();
+                            }
+                        }
                     }
                     
                     // Commit transaction
@@ -219,11 +331,14 @@ $months = [
 
 // Check if user is a manager
 $isManager = ($_SESSION['position'] === 'Manager');
+
+// Meal types
+$meal_types = ['Breakfast', 'Lunch', 'Dinner', 'Other'];
 ?>
 
 <div class="col-md-10 ml-sm-auto px-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Submit Mileage Reimbursement Claim</h1>
+        <h1 class="h2">Submit Reimbursement Claim</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <a href="index.php" class="btn btn-sm btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to List
@@ -233,7 +348,7 @@ $isManager = ($_SESSION['position'] === 'Manager');
     
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Mileage Reimbursement Form</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Reimbursement Form</h6>
             <div>
                 <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#ratesModal">
                     <i class="fas fa-info-circle"></i> View Mileage Rates
@@ -241,7 +356,7 @@ $isManager = ($_SESSION['position'] === 'Manager');
             </div>
         </div>
         <div class="card-body">
-            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" id="claimForm">
+            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" id="claimForm" enctype="multipart/form-data">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
@@ -299,6 +414,7 @@ $isManager = ($_SESSION['position'] === 'Manager');
                 
                 <hr>
                 
+                <!-- Travel Details Section -->
                 <h5 class="font-weight-bold">Travel Details</h5>
                 <?php if(!empty($entries_err)): ?>
                     <div class="alert alert-danger"><?php echo $entries_err; ?></div>
@@ -306,7 +422,7 @@ $isManager = ($_SESSION['position'] === 'Manager');
                 
                 <div class="table-responsive">
                     <table class="table table-bordered" id="travelEntriesTable">
-                        <thead class="bg-primary" style="color: #004085;">
+                        <thead class="bg-primary" style="color:rgb(59, 114, 233);">
                             <tr>
                                 <th>Date</th>
                                 <th>From</th>
@@ -349,12 +465,99 @@ $isManager = ($_SESSION['position'] === 'Manager');
                             <tr>
                                 <td colspan="8">
                                     <button type="button" class="btn btn-success btn-sm" id="addEntryBtn">
-                                        <i class="fas fa-plus"></i> Add Entry
+                                        <i class="fas fa-plus"></i> Add Travel Entry
                                     </button>
                                 </td>
                             </tr>
                         </tfoot>
                     </table>
+                </div>
+                
+                <hr>
+                
+                <!-- Meal Expenses Section -->
+                <h5 class="font-weight-bold mt-4">Meal Expenses</h5>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="mealEntriesTable">
+                        <thead class="bg-success" style="color:rgb(59, 114, 233);">
+                            <tr>
+                                <th>Date</th>
+                                <th>Meal Type</th>
+                                <th>Description</th>
+                                <th>Amount (RM)</th>
+                                <th>Receipt Reference</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mealEntriesBody">
+                            <?php if(empty($meal_entries)): ?>
+                            <tr class="meal-entry-row">
+                                <td><input type="date" name="meal_date[]" class="form-control" required></td>
+                                <td>
+                                    <select name="meal_type[]" class="form-control" required>
+                                        <option value="">Select Meal Type</option>
+                                        <?php foreach($meal_types as $type): ?>
+                                            <option value="<?php echo $type; ?>"><?php echo $type; ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                                <td><input type="text" name="meal_description[]" class="form-control" placeholder="e.g., Lunch with client" required></td>
+                                <td><input type="number" name="meal_amount[]" class="form-control meal-amount" step="0.01" min="0" value="0" required></td>
+                                <td><input type="text" name="receipt_reference[]" class="form-control" placeholder="Receipt #"></td>
+                                <td><button type="button" class="btn btn-danger btn-sm remove-meal-entry"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                            <?php else: ?>
+                                <?php foreach($meal_entries as $meal): ?>
+                                <tr class="meal-entry-row">
+                                    <td><input type="date" name="meal_date[]" class="form-control" value="<?php echo $meal['meal_date']; ?>" required></td>
+                                    <td>
+                                        <select name="meal_type[]" class="form-control" required>
+                                            <option value="">Select Meal Type</option>
+                                            <?php foreach($meal_types as $type): ?>
+                                                <option value="<?php echo $type; ?>" <?php echo ($meal['meal_type'] == $type) ? 'selected' : ''; ?>><?php echo $type; ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" name="meal_description[]" class="form-control" value="<?php echo htmlspecialchars($meal['description']); ?>" required></td>
+                                    <td><input type="number" name="meal_amount[]" class="form-control meal-amount" step="0.01" min="0" value="<?php echo $meal['amount']; ?>" required></td>
+                                    <td><input type="text" name="receipt_reference[]" class="form-control" value="<?php echo htmlspecialchars($meal['receipt_reference']); ?>"></td>
+                                    <td><button type="button" class="btn btn-danger btn-sm remove-meal-entry"><i class="fas fa-trash"></i></button></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="6">
+                                    <button type="button" class="btn btn-success btn-sm" id="addMealEntryBtn">
+                                        <i class="fas fa-plus"></i> Add Meal Expense
+                                    </button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <hr>
+
+                <!-- Receipt Uploads Section -->
+                <h5 class="font-weight-bold mt-4">Receipt Uploads</h5>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Upload receipts for your expenses. Supported file types: PDF, JPG, PNG. Maximum file size: 5MB per file.
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="receiptFiles">Upload Receipts</label>
+                            <input type="file" class="form-control-file" id="receiptFiles" name="receipt_files[]" multiple accept=".pdf,.jpg,.jpeg,.png">
+                            <small class="form-text text-muted">You can select multiple files at once.</small>
+                        </div>
+                        <div id="filePreviewContainer" class="mt-3 row">
+                            <!-- File previews will be displayed here -->
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="row mt-4">
@@ -380,6 +583,10 @@ $isManager = ($_SESSION['position'] === 'Manager');
                                     <div class="col-8">Total Toll:</div>
                                     <div class="col-4 text-right">RM <span id="totalToll">0.00</span></div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-8">Total Meal Expenses:</div>
+                                    <div class="col-4 text-right">RM <span id="totalMeal">0.00</span></div>
+                                </div>
                                 <hr>
                                 <div class="row font-weight-bold">
                                     <div class="col-8">Total Reimbursement Amount:</div>
@@ -391,7 +598,7 @@ $isManager = ($_SESSION['position'] === 'Manager');
                 </div>
                 
                 <div class="alert alert-info mt-4">
-                    <i class="fas fa-info-circle"></i> By submitting this form, you certify that the mileage reimbursement claimed are proper and actual mileages and fees incurred during this period and in accordance with the company's Mileage Reimbursement Policy.
+                    <i class="fas fa-info-circle"></i> By submitting this form, you certify that the reimbursement claimed are proper and actual expenses incurred during this period and in accordance with the company's Reimbursement Policy.
                 </div>
                 
                 <div class="form-group mt-4">
@@ -486,6 +693,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var totalKm = 0;
         var totalParking = 0;
         var totalToll = 0;
+        var totalMeal = 0;
         
         // Get all entry rows
         var entryRows = document.querySelectorAll('.entry-row');
@@ -503,6 +711,16 @@ document.addEventListener('DOMContentLoaded', function() {
             totalKm += km;
             totalParking += parking;
             totalToll += toll;
+        });
+        
+        // Get all meal entry rows
+        var mealRows = document.querySelectorAll('.meal-entry-row');
+        
+        // Loop through each meal row and sum up the values
+        mealRows.forEach(function(row) {
+            var mealAmountInput = row.querySelector('.meal-amount');
+            var mealAmount = parseFloat(mealAmountInput.value) || 0;
+            totalMeal += mealAmount;
         });
         
         // Calculate mileage amount based on rates and position
@@ -541,17 +759,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        var totalAmount = kmAmount + totalParking + totalToll;
+        var totalAmount = kmAmount + totalParking + totalToll + totalMeal;
         
         // Update display
         document.getElementById('totalKm').textContent = totalKm.toFixed(2);
         document.getElementById('totalKmAmount').textContent = kmAmount.toFixed(2);
         document.getElementById('totalParking').textContent = totalParking.toFixed(2);
         document.getElementById('totalToll').textContent = totalToll.toFixed(2);
+        document.getElementById('totalMeal').textContent = totalMeal.toFixed(2);
         document.getElementById('totalAmount').textContent = totalAmount.toFixed(2);
     }
     
-    // Add new entry row
+    // Add new travel entry row
     document.getElementById('addEntryBtn').addEventListener('click', function() {
         var entriesBody = document.getElementById('entriesBody');
         var newRow = document.createElement('tr');
@@ -589,7 +808,45 @@ document.addEventListener('DOMContentLoaded', function() {
         updateTotals();
     });
     
-    // Remove entry row - delegate to parent since rows can be dynamically added
+    // Add new meal entry row
+    document.getElementById('addMealEntryBtn').addEventListener('click', function() {
+        var mealEntriesBody = document.getElementById('mealEntriesBody');
+        var newRow = document.createElement('tr');
+        newRow.className = 'meal-entry-row';
+        newRow.innerHTML = `
+            <td><input type="date" name="meal_date[]" class="form-control" required></td>
+            <td>
+                <select name="meal_type[]" class="form-control" required>
+                    <option value="">Select Meal Type</option>
+                    <?php foreach($meal_types as $type): ?>
+                        <option value="<?php echo $type; ?>"><?php echo $type; ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </td>
+            <td><input type="text" name="meal_description[]" class="form-control" placeholder="e.g., Lunch with client" required></td>
+            <td><input type="number" name="meal_amount[]" class="form-control meal-amount" step="0.01" min="0" value="0" required></td>
+            <td><input type="text" name="receipt_reference[]" class="form-control" placeholder="Receipt #"></td>
+            <td><button type="button" class="btn btn-danger btn-sm remove-meal-entry"><i class="fas fa-trash"></i></button></td>
+        `;
+        mealEntriesBody.appendChild(newRow);
+        
+        // Add event listeners to the new inputs
+        var newInputs = newRow.querySelectorAll('input');
+        newInputs.forEach(function(input) {
+            input.addEventListener('input', updateTotals);
+        });
+        
+        // Add event listener to the new remove button
+        var removeBtn = newRow.querySelector('.remove-meal-entry');
+        removeBtn.addEventListener('click', function() {
+            this.closest('tr').remove();
+            updateTotals();
+        });
+        
+        updateTotals();
+    });
+    
+    // Remove travel entry row - delegate to parent since rows can be dynamically added
     document.getElementById('entriesBody').addEventListener('click', function(e) {
         if (e.target.classList.contains('remove-entry') || e.target.parentElement.classList.contains('remove-entry')) {
             var button = e.target.classList.contains('remove-entry') ? e.target : e.target.parentElement;
@@ -603,8 +860,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Remove meal entry row - delegate to parent since rows can be dynamically added
+    document.getElementById('mealEntriesBody').addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-meal-entry') || e.target.parentElement.classList.contains('remove-meal-entry')) {
+            var button = e.target.classList.contains('remove-meal-entry') ? e.target : e.target.parentElement;
+            button.closest('tr').remove();
+            updateTotals();
+        }
+    });
+    
     // Add input event listeners to all existing inputs
-    var allInputs = document.querySelectorAll('.miles-traveled, .parking-fee, .toll-fee');
+    var allInputs = document.querySelectorAll('.miles-traveled, .parking-fee, .toll-fee, .meal-amount');
     allInputs.forEach(function(input) {
         input.addEventListener('input', updateTotals);
     });
@@ -615,8 +881,43 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize totals on page load
     updateTotals();
     
+    // File upload preview
+    document.getElementById('receiptFiles').addEventListener('change', function(e) {
+        const filePreviewContainer = document.getElementById('filePreviewContainer');
+        filePreviewContainer.innerHTML = ''; // Clear previous previews
+        
+        if (this.files.length > 0) {
+            for (let i = 0; i < this.files.length; i++) {
+                const file = this.files[i];
+                const fileSize = (file.size / 1024).toFixed(2); // Convert to KB
+                const fileType = file.type;
+                
+                // Create preview card
+                const previewCard = document.createElement('div');
+                previewCard.className = 'col-md-4 mb-3';
+                
+                let fileIcon = '<i class="fas fa-file-pdf fa-3x text-danger"></i>';
+                if (fileType.includes('image')) {
+                    fileIcon = '<i class="fas fa-file-image fa-3x text-primary"></i>';
+                }
+                
+                previewCard.innerHTML = `
+                    <div class="card">
+                        <div class="card-body text-center">
+                            ${fileIcon}
+                            <h6 class="mt-2 text-truncate" title="${file.name}">${file.name}</h6>
+                            <p class="small text-muted mb-0">${fileSize} KB</p>
+                        </div>
+                    </div>
+                `;
+                
+                filePreviewContainer.appendChild(previewCard);
+            }
+        }
+    });
+    
     // Debug log to check if script is running
-    console.log('Mileage calculator script initialized');
+    console.log('Reimbursement calculator script initialized');
 });
 </script>
 

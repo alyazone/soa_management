@@ -3,12 +3,21 @@ ob_start();
 // Set the base path for includes
 $basePath = '../../';
 
-// Include header and sidebar
-include_once $basePath . "includes/header.php";
-include_once $basePath . "includes/sidebar.php";
-
 // Include database connection
 require_once $basePath . "config/database.php";
+
+// Check if user is logged in
+session_start();
+if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
+    header("location: " . $basePath . "modules/auth/login.php");
+    exit;
+}
+
+// Check if the user has admin privileges
+if($_SESSION['position'] != 'Admin'){
+    header("location: " . $basePath . "dashboard.php");
+    exit;
+}
 
 // Define variables and initialize with empty values
 $client_name = $address = $pic_name = $pic_contact = $pic_email = "";
@@ -16,206 +25,718 @@ $client_name_err = $address_err = $pic_name_err = $pic_contact_err = $pic_email_
 
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
-   // Validate client name
-   if(empty(trim($_POST["client_name"]))){
-       $client_name_err = "Please enter client name.";
-   } else{
-       $client_name = trim($_POST["client_name"]);
-   }
-   
-   // Validate address
-   if(empty(trim($_POST["address"]))){
-       $address_err = "Please enter address.";
-   } else{
-       $address = trim($_POST["address"]);
-   }
-   
-   // Validate PIC name
-   if(empty(trim($_POST["pic_name"]))){
-       $pic_name_err = "Please enter PIC name.";
-   } else{
-       $pic_name = trim($_POST["pic_name"]);
-   }
-   
-   // Validate PIC contact
-   if(empty(trim($_POST["pic_contact"]))){
-       $pic_contact_err = "Please enter PIC contact.";
-   } else{
-       $pic_contact = trim($_POST["pic_contact"]);
-   }
-   
-   // Validate PIC email
-   if(empty(trim($_POST["pic_email"]))){
-       $pic_email_err = "Please enter PIC email.";
-   } elseif(!filter_var(trim($_POST["pic_email"]), FILTER_VALIDATE_EMAIL)){
-       $pic_email_err = "Please enter a valid email address.";
-   } else{
-       $pic_email = trim($_POST["pic_email"]);
-   }
-   
-   // Check input errors before inserting in database
-   if(empty($client_name_err) && empty($address_err) && empty($pic_name_err) && empty($pic_contact_err) && empty($pic_email_err)){
-       // Prepare an insert statement
-       $sql = "INSERT INTO clients (client_name, address, pic_name, pic_contact, pic_email) VALUES (:client_name, :address, :pic_name, :pic_contact, :pic_email)";
-        
-       if($stmt = $pdo->prepare($sql)){
-           // Bind variables to the prepared statement as parameters
-           $stmt->bindParam(":client_name", $param_client_name, PDO::PARAM_STR);
-           $stmt->bindParam(":address", $param_address, PDO::PARAM_STR);
-           $stmt->bindParam(":pic_name", $param_pic_name, PDO::PARAM_STR);
-           $stmt->bindParam(":pic_contact", $param_pic_contact, PDO::PARAM_STR);
-           $stmt->bindParam(":pic_email", $param_pic_email, PDO::PARAM_STR);
-           
-           // Set parameters
-           $param_client_name = $client_name;
-           $param_address = $address;
-           $param_pic_name = $pic_name;
-           $param_pic_contact = $pic_contact;
-           $param_pic_email = $pic_email;
-           
-           // Attempt to execute the prepared statement
-           if($stmt->execute()){
-               // Records created successfully. Redirect to landing page
-               header("location: index.php");
-               exit();
-           } else{
-               echo "Oops! Something went wrong. Please try again later.";
-           }
-       }
-        
-       // Close statement
-       unset($stmt);
-   }
-   
-   // Close connection
-   unset($pdo);
+    // Validate client name
+    if(empty(trim($_POST["client_name"]))){
+        $client_name_err = "Please enter client name.";
+    } else{
+        $client_name = trim($_POST["client_name"]);
+    }
+    
+    // Validate address
+    if(empty(trim($_POST["address"]))){
+        $address_err = "Please enter address.";
+    } else{
+        $address = trim($_POST["address"]);
+    }
+    
+    // Validate PIC name
+    if(empty(trim($_POST["pic_name"]))){
+        $pic_name_err = "Please enter PIC name.";
+    } else{
+        $pic_name = trim($_POST["pic_name"]);
+    }
+    
+    // Validate PIC contact
+    if(empty(trim($_POST["pic_contact"]))){
+        $pic_contact_err = "Please enter PIC contact.";
+    } else{
+        $pic_contact = trim($_POST["pic_contact"]);
+    }
+    
+    // Validate PIC email
+    if(empty(trim($_POST["pic_email"]))){
+        $pic_email_err = "Please enter PIC email.";
+    } elseif(!filter_var(trim($_POST["pic_email"]), FILTER_VALIDATE_EMAIL)){
+        $pic_email_err = "Please enter a valid email address.";
+    } else{
+        // Check if email already exists
+        try {
+            $stmt = $pdo->prepare("SELECT client_id FROM clients WHERE pic_email = :email");
+            $stmt->bindParam(":email", trim($_POST["pic_email"]), PDO::PARAM_STR);
+            $stmt->execute();
+            
+            if($stmt->rowCount() > 0){
+                $pic_email_err = "This email is already registered with another client.";
+            } else{
+                $pic_email = trim($_POST["pic_email"]);
+            }
+        } catch(PDOException $e) {
+            error_log("Email check error: " . $e->getMessage());
+            $pic_email_err = "An error occurred while validating the email.";
+        }
+    }
+    
+    // Check input errors before inserting in database
+    if(empty($client_name_err) && empty($address_err) && empty($pic_name_err) && empty($pic_contact_err) && empty($pic_email_err)){
+        try {
+            // Prepare an insert statement
+            $sql = "INSERT INTO clients (client_name, address, pic_name, pic_contact, pic_email) VALUES (:client_name, :address, :pic_name, :pic_contact, :pic_email)";
+            
+            if($stmt = $pdo->prepare($sql)){
+                // Bind variables to the prepared statement as parameters
+                $stmt->bindParam(":client_name", $param_client_name, PDO::PARAM_STR);
+                $stmt->bindParam(":address", $param_address, PDO::PARAM_STR);
+                $stmt->bindParam(":pic_name", $param_pic_name, PDO::PARAM_STR);
+                $stmt->bindParam(":pic_contact", $param_pic_contact, PDO::PARAM_STR);
+                $stmt->bindParam(":pic_email", $param_pic_email, PDO::PARAM_STR);
+                
+                // Set parameters
+                $param_client_name = $client_name;
+                $param_address = $address;
+                $param_pic_name = $pic_name;
+                $param_pic_contact = $pic_contact;
+                $param_pic_email = $pic_email;
+                
+                // Attempt to execute the prepared statement
+                if($stmt->execute()){
+                    // Records created successfully. Redirect to landing page
+                    header("location: index.php?success=added");
+                    exit();
+                } else{
+                    $general_err = "Oops! Something went wrong. Please try again later.";
+                }
+            }
+        } catch(PDOException $e) {
+            error_log("Client creation error: " . $e->getMessage());
+            $general_err = "An error occurred while creating the client.";
+        }
+    }
 }
 ?>
 
-<div class="col-md-10 ml-sm-auto px-4">
-   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-       <h1 class="h2">Add New Client</h1>
-       <div class="btn-toolbar mb-2 mb-md-0">
-           <a href="index.php" class="btn btn-sm btn-secondary">
-               <i class="fas fa-arrow-left"></i> Back to List
-           </a>
-       </div>
-   </div>
-   
-   <div class="card shadow mb-4">
-       <div class="card-header py-3">
-           <h6 class="m-0 font-weight-bold text-primary">Client Information</h6>
-       </div>
-       <div class="card-body">
-           <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-               <!-- Company Information Section -->
-               <div class="card mb-4">
-                   <div class="card-header bg-light">
-                       <h6 class="m-0 font-weight-bold text-primary">
-                           <i class="fas fa-building mr-2"></i>Company Information
-                           <span class="badge badge-warning ml-2">Required</span>
-                       </h6>
-                       <small class="text-muted">Basic information about the client company</small>
-                   </div>
-                   <div class="card-body">
-                       <div class="form-group">
-                           <label>
-                               <span class="text-danger">*</span> Client Name
-                           </label>
-                           <div class="input-group">
-                               <div class="input-group-prepend">
-                                   <span class="input-group-text"><i class="fas fa-building"></i></span>
-                               </div>
-                               <input type="text" name="client_name" class="form-control <?php echo (!empty($client_name_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $client_name; ?>" placeholder="Enter company name">
-                               <span class="invalid-feedback"><?php echo $client_name_err; ?></span>
-                           </div>
-                       </div>
-                       
-                       <div class="form-group">
-                           <label>
-                               <span class="text-danger">*</span> Address
-                           </label>
-                           <div class="input-group">
-                               <div class="input-group-prepend">
-                                   <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
-                               </div>
-                               <textarea name="address" class="form-control <?php echo (!empty($address_err)) ? 'is-invalid' : ''; ?>" rows="3" placeholder="Enter complete address"><?php echo $address; ?></textarea>
-                               <span class="invalid-feedback"><?php echo $address_err; ?></span>
-                           </div>
-                           <small class="form-text text-muted">Include street address, city, state/province, and postal code</small>
-                       </div>
-                   </div>
-               </div>
-               
-               <!-- Contact Person Section -->
-               <div class="card mb-4">
-                   <div class="card-header bg-light">
-                       <h6 class="m-0 font-weight-bold text-primary">
-                           <i class="fas fa-user mr-2"></i>Contact Person Information
-                           <span class="badge badge-warning ml-2">Required</span>
-                       </h6>
-                       <small class="text-muted">Details about the primary contact person</small>
-                   </div>
-                   <div class="card-body">
-                       <div class="form-group">
-                           <label>
-                               <span class="text-danger">*</span> PIC Name
-                           </label>
-                           <div class="input-group">
-                               <div class="input-group-prepend">
-                                   <span class="input-group-text"><i class="fas fa-user"></i></span>
-                               </div>
-                               <input type="text" name="pic_name" class="form-control <?php echo (!empty($pic_name_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $pic_name; ?>" placeholder="Enter contact person's full name">
-                               <span class="invalid-feedback"><?php echo $pic_name_err; ?></span>
-                           </div>
-                       </div>
-                       
-                       <div class="form-row">
-                           <div class="form-group col-md-6">
-                               <label>
-                                   <span class="text-danger">*</span> PIC Contact
-                               </label>
-                               <div class="input-group">
-                                   <div class="input-group-prepend">
-                                       <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                                   </div>
-                                   <input type="text" name="pic_contact" class="form-control <?php echo (!empty($pic_contact_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $pic_contact; ?>" placeholder="Enter phone number">
-                                   <span class="invalid-feedback"><?php echo $pic_contact_err; ?></span>
-                               </div>
-                           </div>
-                           
-                           <div class="form-group col-md-6">
-                               <label>
-                                   <span class="text-danger">*</span> PIC Email
-                               </label>
-                               <div class="input-group">
-                                   <div class="input-group-prepend">
-                                       <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                   </div>
-                                   <input type="email" name="pic_email" class="form-control <?php echo (!empty($pic_email_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $pic_email; ?>" placeholder="Enter email address">
-                                   <span class="invalid-feedback"><?php echo $pic_email_err; ?></span>
-                               </div>
-                           </div>
-                       </div>
-                   </div>
-               </div>
-               
-               <!-- Form Actions -->
-               <div class="form-group text-center">
-                   <button type="submit" class="btn btn-primary btn-lg px-5">
-                       <i class="fas fa-save mr-2"></i>Save Client
-                   </button>
-                   <a href="index.php" class="btn btn-secondary btn-lg ml-2 px-5">
-                       <i class="fas fa-times mr-2"></i>Cancel
-                   </a>
-               </div>
-           </form>
-       </div>
-   </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Client - SOA Management System</title>
+    
+    <!-- Modern CSS Framework -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../../assets/css/modern-dashboard.css">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Sidebar -->
+    <?php include_once $basePath . "includes/modern-sidebar.php"; ?>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="header-title">
+                        <h1>Add New Client</h1>
+                        <p>Register a new client in the system</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <a href="index.php" class="export-btn secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to List
+                    </a>
+                </div>
+            </div>
+        </header>
 
-<?php
-// Include footer
-include_once $basePath . "includes/footer.php";
-ob_end_flush();
-?>
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Error Message -->
+            <?php if(isset($general_err)): ?>
+                <div class="alert alert-error" data-aos="fade-down">
+                    <div class="alert-content">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span><?php echo $general_err; ?></span>
+                    </div>
+                    <button class="alert-close" onclick="this.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            <?php endif; ?>
+
+            <!-- Add Client Form -->
+            <div class="form-card" data-aos="fade-up">
+                <div class="form-header">
+                    <div class="form-title">
+                        <h3>
+                            <i class="fas fa-building"></i>
+                            Client Information
+                        </h3>
+                        <p>Enter the details for the new client</p>
+                    </div>
+                </div>
+                
+                <div class="form-body">
+                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="modern-form" id="clientForm">
+                        <!-- Company Information Section -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4>
+                                    <i class="fas fa-building"></i>
+                                    Company Information
+                                </h4>
+                                <span class="required-badge">Required</span>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label class="form-label required">
+                                        <i class="fas fa-building"></i>
+                                        Client Name
+                                    </label>
+                                    <input type="text" 
+                                           name="client_name" 
+                                           class="form-input <?php echo (!empty($client_name_err)) ? 'error' : ''; ?>" 
+                                           value="<?php echo htmlspecialchars($client_name); ?>" 
+                                           placeholder="Enter company name"
+                                           required>
+                                    <?php if(!empty($client_name_err)): ?>
+                                        <span class="error-message">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            <?php echo $client_name_err; ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <div class="form-group full-width">
+                                    <label class="form-label required">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        Address
+                                    </label>
+                                    <textarea name="address" 
+                                              class="form-textarea <?php echo (!empty($address_err)) ? 'error' : ''; ?>" 
+                                              rows="3" 
+                                              placeholder="Enter complete address including city, state, and postal code"
+                                              required><?php echo htmlspecialchars($address); ?></textarea>
+                                    <?php if(!empty($address_err)): ?>
+                                        <span class="error-message">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            <?php echo $address_err; ?>
+                                        </span>
+                                    <?php endif; ?>
+                                    <small class="form-help">Include street address, city, state/province, and postal code</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Person Section -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4>
+                                    <i class="fas fa-user"></i>
+                                    Contact Person Information
+                                </h4>
+                                <span class="required-badge">Required</span>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label class="form-label required">
+                                        <i class="fas fa-user"></i>
+                                        Contact Person Name
+                                    </label>
+                                    <input type="text" 
+                                           name="pic_name" 
+                                           class="form-input <?php echo (!empty($pic_name_err)) ? 'error' : ''; ?>" 
+                                           value="<?php echo htmlspecialchars($pic_name); ?>" 
+                                           placeholder="Enter contact person's full name"
+                                           required>
+                                    <?php if(!empty($pic_name_err)): ?>
+                                        <span class="error-message">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            <?php echo $pic_name_err; ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label required">
+                                        <i class="fas fa-phone"></i>
+                                        Contact Number
+                                    </label>
+                                    <input type="tel" 
+                                           name="pic_contact" 
+                                           class="form-input <?php echo (!empty($pic_contact_err)) ? 'error' : ''; ?>" 
+                                           value="<?php echo htmlspecialchars($pic_contact); ?>" 
+                                           placeholder="Enter phone number"
+                                           required>
+                                    <?php if(!empty($pic_contact_err)): ?>
+                                        <span class="error-message">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            <?php echo $pic_contact_err; ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label required">
+                                        <i class="fas fa-envelope"></i>
+                                        Email Address
+                                    </label>
+                                    <input type="email" 
+                                           name="pic_email" 
+                                           class="form-input <?php echo (!empty($pic_email_err)) ? 'error' : ''; ?>" 
+                                           value="<?php echo htmlspecialchars($pic_email); ?>" 
+                                           placeholder="Enter email address"
+                                           required>
+                                    <?php if(!empty($pic_email_err)): ?>
+                                        <span class="error-message">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            <?php echo $pic_email_err; ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Create Client
+                            </button>
+                            <a href="index.php" class="btn btn-secondary">
+                                <i class="fas fa-times"></i>
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script src="../../assets/js/modern-dashboard.js"></script>
+    
+    <script>
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize AOS animations
+            AOS.init({
+                duration: 800,
+                easing: 'ease-in-out',
+                once: true
+            });
+
+            // Initialize interactions
+            initializeDashboard();
+            
+            // Form validation
+            initializeFormValidation();
+        });
+
+        function initializeFormValidation() {
+            const form = document.getElementById('clientForm');
+            const inputs = form.querySelectorAll('input, textarea');
+            
+            // Real-time validation
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    validateField(this);
+                });
+                
+                input.addEventListener('input', function() {
+                    if (this.classList.contains('error')) {
+                        validateField(this);
+                    }
+                });
+            });
+
+            // Form submission validation
+            form.addEventListener('submit', function(e) {
+                let isValid = true;
+                
+                inputs.forEach(input => {
+                    if (!validateField(input)) {
+                        isValid = false;
+                    }
+                });
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    showFormError('Please correct the errors above before submitting.');
+                }
+            });
+        }
+
+        function validateField(field) {
+            const value = field.value.trim();
+            const fieldName = field.name;
+            let isValid = true;
+            let errorMessage = '';
+
+            // Remove existing error state
+            field.classList.remove('error');
+            const existingError = field.parentNode.querySelector('.error-message');
+            if (existingError) {
+                existingError.remove();
+            }
+
+            // Skip validation if field is not required and empty
+            if (!field.hasAttribute('required') && value === '') {
+                return true;
+            }
+
+            // Validate based on field type
+            switch(fieldName) {
+                case 'client_name':
+                    if (value === '') {
+                        isValid = false;
+                        errorMessage = 'Client name is required.';
+                    } else if (value.length < 2) {
+                        isValid = false;
+                        errorMessage = 'Client name must be at least 2 characters.';
+                    }
+                    break;
+                case 'address':
+                    if (value === '') {
+                        isValid = false;
+                        errorMessage = 'Address is required.';
+                    } else if (value.length < 10) {
+                        isValid = false;
+                        errorMessage = 'Please enter a complete address.';
+                    }
+                    break;
+                case 'pic_name':
+                    if (value === '') {
+                        isValid = false;
+                        errorMessage = 'Contact person name is required.';
+                    } else if (value.length < 2) {
+                        isValid = false;
+                        errorMessage = 'Name must be at least 2 characters.';
+                    }
+                    break;
+                case 'pic_contact':
+                    if (value === '') {
+                        isValid = false;
+                        errorMessage = 'Contact number is required.';
+                    } else if (!/^[\d\s\-\+$$$$]+$/.test(value)) {
+                        isValid = false;
+                        errorMessage = 'Please enter a valid phone number.';
+                    }
+                    break;
+                case 'pic_email':
+                    if (value === '') {
+                        isValid = false;
+                        errorMessage = 'Email address is required.';
+                    } else if (!isValidEmail(value)) {
+                        isValid = false;
+                        errorMessage = 'Please enter a valid email address.';
+                    }
+                    break;
+            }
+
+            if (!isValid) {
+                field.classList.add('error');
+                const errorSpan = document.createElement('span');
+                errorSpan.className = 'error-message';
+                errorSpan.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${errorMessage}`;
+                field.parentNode.appendChild(errorSpan);
+            }
+
+            return isValid;
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function showFormError(message) {
+            // Remove existing error alert
+            const existingAlert = document.querySelector('.alert-error');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            // Create new error alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-error';
+            alertDiv.innerHTML = `
+                <div class="alert-content">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>${message}</span>
+                </div>
+                <button class="alert-close" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            // Insert before form
+            const form = document.querySelector('.form-card');
+            form.parentNode.insertBefore(alertDiv, form);
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    </script>
+
+    <style>
+        /* Form Specific Styles */
+        .form-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+        }
+
+        .form-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--gray-50);
+        }
+
+        .form-title h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--gray-900);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .form-title p {
+            color: var(--gray-600);
+            margin: 0;
+        }
+
+        .form-body {
+            padding: 2rem;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .section-header h4 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--gray-900);
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .required-badge {
+            background: var(--danger-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .form-label.required::after {
+            content: '*';
+            color: var(--danger-color);
+            margin-left: 0.25rem;
+        }
+
+        .form-input,
+        .form-textarea {
+            padding: 0.75rem;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius-sm);
+            font-size: 0.875rem;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-input.error,
+        .form-textarea.error {
+            border-color: var(--danger-color);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-help {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            margin-top: 0.25rem;
+        }
+
+        .error-message {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--danger-color);
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--gray-200);
+            margin-top: 2rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+            color: var(--gray-900);
+            text-decoration: none;
+        }
+
+        /* Alert Styles */
+        .alert {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1.5rem;
+            border: 1px solid;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .alert-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .alert-close {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: var(--border-radius-sm);
+            transition: var(--transition);
+        }
+
+        .alert-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-body {
+                padding: 1.5rem;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</body>
+</html>
+
+<?php ob_end_flush(); ?>

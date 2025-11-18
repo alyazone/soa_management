@@ -1,0 +1,334 @@
+/* Dashboard Styles */
+
+/* Chart containers */
+.chart-container {
+  position: relative;
+  min-height: 300px;
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+/* Loading state for charts */
+.chart-container.loading::before {
+  content: "Loading...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16px;
+  color: #6c757d;
+  z-index: 10;
+}
+
+.chart-container.loading::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 5;
+}
+
+/* Card border styles */
+.border-left-primary {
+  border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+  border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+  border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+  border-left: 0.25rem solid #f6c23e !important;
+}
+
+.border-left-danger {
+  border-left: 0.25rem solid #e74a3b !important;
+}
+
+/* Interactive card styles */
+.drill-down-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.drill-down-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Table row hover effects */
+.table-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.table-row-clickable:hover {
+  background-color: rgba(78, 115, 223, 0.05) !important;
+}
+
+/* Custom ApexCharts Tooltip Styling */
+.apexcharts-tooltip {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  border: none !important;
+  border-radius: 0.35rem !important;
+}
+
+.apexcharts-tooltip-title {
+  font-weight: 600 !important;
+  background-color: #f8f9fc !important;
+  border-bottom: 1px solid #e3e6f0 !important;
+}
+
+/* ApexCharts Legend Styling */
+.apexcharts-legend {
+  padding: 0.5rem !important;
+}
+
+.apexcharts-legend-series {
+  margin: 0.25rem 0 !important;
+}
+
+/* Date Range Picker Styling */
+.daterangepicker {
+  font-family: inherit;
+  border-radius: 0.35rem;
+  border: 1px solid #e3e6f0;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.daterangepicker .ranges li.active {
+  background-color: #4e73df;
+}
+
+.daterangepicker td.active,
+.daterangepicker td.active:hover {
+  background-color: #4e73df;
+}
+
+/* Card Header and Dropdown Styling */
+.card-header {
+  background-color: #f8f9fc;
+  border-bottom: 1px solid #e3e6f0;
+  padding: 0.75rem 1.25rem;
+}
+
+.dropdown-menu {
+  border: none;
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.dropdown-item:active {
+  background-color: #4e73df;
+}
+
+/* Filter controls */
+.dashboard-filters {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-filters .form-control {
+  border-radius: 0.35rem;
+}
+
+.dashboard-filters .btn-group {
+  margin-right: 0.5rem;
+}
+
+/* Status badges */
+.badge {
+  font-size: 85%;
+  font-weight: 600;
+  padding: 0.35em 0.65em;
+  border-radius: 0.25rem;
+}
+
+.badge-pending {
+  background-color: #f6c23e;
+  color: #fff;
+}
+
+.badge-approved,
+.badge-paid {
+  background-color: #1cc88a;
+  color: #fff;
+}
+
+.badge-rejected,
+.badge-overdue {
+  background-color: #e74a3b;
+  color: #fff;
+}
+
+/* Dashboard cards */
+.dashboard-card {
+  margin-bottom: 1.5rem;
+  border-radius: 0.35rem;
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+}
+
+.dashboard-card .card-body {
+  padding: 1.25rem;
+}
+
+/* Dashboard stats */
+.stat-icon {
+  font-size: 2rem;
+  opacity: 0.3;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6c757d;
+}
+
+/* Breadcrumb navigation for drill-down */
+.drill-down-breadcrumb {
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #f8f9fc;
+  border-radius: 0.35rem;
+}
+
+.drill-down-breadcrumb .breadcrumb-item {
+  cursor: pointer;
+}
+
+.drill-down-breadcrumb .breadcrumb-item.active {
+  color: #4e73df;
+  font-weight: 600;
+}
+
+/* Print styles */
+@media print {
+  .chart-container {
+    min-height: 250px !important;
+    page-break-inside: avoid;
+  }
+
+  .dropdown-toggle,
+  .btn-toolbar,
+  .no-print {
+    display: none !important;
+  }
+
+  .card {
+    border: 1px solid #ddd !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .card-header {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+
+  .table {
+    width: 100% !important;
+    margin-bottom: 1rem !important;
+    color: #212529 !important;
+    border-collapse: collapse !important;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.75rem !important;
+    vertical-align: top !important;
+    border-top: 1px solid #dee2e6 !important;
+  }
+
+  .table thead th {
+    vertical-align: bottom !important;
+    border-bottom: 2px solid #dee2e6 !important;
+  }
+
+  .table tbody + tbody {
+    border-top: 2px solid #dee2e6 !important;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .chart-container {
+    min-height: 250px;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .card-header .btn-group {
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    min-height: 200px;
+  }
+
+  .dashboard-filters {
+    flex-direction: column;
+  }
+
+  .dashboard-filters .form-group {
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+
+  .dashboard-filters .btn-group {
+    margin-top: 0.5rem;
+    width: 100%;
+  }
+
+  .dashboard-filters .btn {
+    flex: 1;
+  }
+}
+
+/* User Info Dropdown Styles */
+.user-info {
+    position: relative;
+    cursor: pointer;
+    outline: none;
+}
+.user-dropdown-menu {
+    display: none;
+    position: absolute;
+    left: 0;
+    bottom: 110%;
+    min-width: 140px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(30,34,90,0.12);
+    border-radius: 0.5rem;
+    z-index: 100;
+    padding: 0.5rem 0;
+}
+.user-dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    color: #222;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+.user-dropdown-menu .dropdown-item:hover {
+    background: #f4f6fa;
+    color: #4e73df;
+}
+.user-info.active .user-dropdown-menu {
+    display: block;
+}

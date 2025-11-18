@@ -37,15 +37,26 @@ try {
     $entry_stmt->execute();
     $entries = $entry_stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // Fetch meal entries
+    $meal_stmt = $pdo->prepare("SELECT * FROM claim_meal_entries WHERE claim_id = :claim_id ORDER BY meal_date");
+    $meal_stmt->bindParam(":claim_id", $_GET["id"], PDO::PARAM_INT);
+    $meal_stmt->execute();
+    $meal_entries = $meal_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
     // Calculate totals
     $total_km = 0;
     $total_parking = 0;
     $total_toll = 0;
+    $total_meal = 0;
     
     foreach($entries as $entry){
         $total_km += floatval($entry['miles_traveled']);
         $total_parking += floatval($entry['parking_fee']);
         $total_toll += floatval($entry['toll_fee']);
+    }
+    
+    foreach($meal_entries as $meal){
+        $total_meal += floatval($meal['amount']);
     }
     
 } catch(PDOException $e) {
@@ -85,7 +96,7 @@ $months = [
 
 <div class="col-md-10 ml-sm-auto px-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Mileage Reimbursement Claim Details</h1>
+        <h1 class="h2">Reimbursement Claim Details</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <?php if($claim['status'] == 'Pending' && ($claim['staff_id'] == $_SESSION['staff_id'] || $_SESSION['position'] == 'Admin' || $_SESSION['position'] == 'Manager')): ?>
                 <a href="edit.php?id=<?php echo $_GET['id']; ?>" class="btn btn-sm btn-primary mr-2">
@@ -126,7 +137,7 @@ $months = [
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
-                    <h5 class="font-weight-bold">MILEAGE REIMBURSEMENT CLAIM FORM</h5>
+                    <h5 class="font-weight-bold">REIMBURSEMENT CLAIM FORM</h5>
                 </div>
                 <div class="col-md-6 text-right">
                     <p><strong>Submission Date:</strong> <?php echo isset($claim['created_at']) && !empty($claim['created_at']) ? formatDate($claim['created_at']) : 'Not available'; ?></p>
@@ -150,8 +161,7 @@ $months = [
             <h5 class="font-weight-bold mt-4">Travel Details</h5>
             <div class="table-responsive">
                 <table class="table table-bordered">
-                    <thead class="bg-primary" style="color: #004085;">
-
+                    <thead class="bg-primary text-white">
                         <tr>
                             <th>Date</th>
                             <th>From</th>
@@ -178,6 +188,36 @@ $months = [
                 </table>
             </div>
             
+            <h5 class="font-weight-bold mt-4">Meal Expenses</h5>
+            <?php if(empty($meal_entries)): ?>
+                <div class="alert alert-info">No meal expenses claimed.</div>
+            <?php else: ?>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="bg-success text-white">
+                        <tr>
+                            <th>Date</th>
+                            <th>Meal Type</th>
+                            <th>Description</th>
+                            <th>Amount (RM)</th>
+                            <th>Receipt Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($meal_entries as $meal): ?>
+                        <tr>
+                            <td><?php echo formatDate($meal['meal_date']); ?></td>
+                            <td><?php echo htmlspecialchars($meal['meal_type']); ?></td>
+                            <td><?php echo htmlspecialchars($meal['description']); ?></td>
+                            <td class="text-right"><?php echo number_format($meal['amount'], 2); ?></td>
+                            <td><?php echo htmlspecialchars($meal['receipt_reference']); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+            
             <div class="row mt-4">
                 <div class="col-md-6 offset-md-6">
                     <div class="card">
@@ -201,6 +241,10 @@ $months = [
                                 <div class="col-8">Total Toll:</div>
                                 <div class="col-4 text-right">RM <?php echo number_format($total_toll, 2); ?></div>
                             </div>
+                            <div class="row">
+                                <div class="col-8">Total Meal Expenses:</div>
+                                <div class="col-4 text-right">RM <?php echo number_format($claim['total_meal_amount'] ?? $total_meal, 2); ?></div>
+                            </div>
                             <hr>
                             <div class="row font-weight-bold">
                                 <div class="col-8">Total Reimbursement Amount:</div>
@@ -214,7 +258,7 @@ $months = [
             <div class="row mt-4">
                 <div class="col-md-12">
                     <div class="alert alert-secondary">
-                        <p class="mb-0"><strong>Certification:</strong> I HEREBY CERTIFY that the mileage reimbursement claimed on this form are proper and actual mileages and parking fees incurred during this period and in accordance with the company's Mileage Reimbursement Policy.</p>
+                        <p class="mb-0"><strong>Certification:</strong> I HEREBY CERTIFY that the reimbursement claimed on this form are proper and actual expenses incurred during this period and in accordance with the company's Reimbursement Policy.</p>
                     </div>
                 </div>
             </div>
@@ -277,6 +321,56 @@ $months = [
             <?php endif; ?>
         </div>
     </div>
+    <!-- Receipt Files Section -->
+    <?php
+    // Fetch receipt files for this claim
+    $claim_id = $_GET["id"];
+    $receiptSql = "SELECT * FROM claim_receipts WHERE claim_id = :claim_id ORDER BY upload_date DESC";
+    $receiptStmt = $pdo->prepare($receiptSql);
+    $receiptStmt->bindParam(":claim_id", $claim_id, PDO::PARAM_INT);
+    $receiptStmt->execute();
+    $receipts = $receiptStmt->fetchAll(PDO::FETCH_ASSOC);
+    ?>
+
+    <?php if (!empty($receipts)): ?>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Uploaded Receipts</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <?php foreach ($receipts as $receipt): ?>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <?php if (strpos($receipt['file_type'], 'image') !== false): ?>
+                                    <i class="fas fa-file-image fa-3x text-primary"></i>
+                                <?php else: ?>
+                                    <i class="fas fa-file-pdf fa-3x text-danger"></i>
+                                <?php endif; ?>
+                                
+                                <h6 class="mt-2 text-truncate" title="<?php echo htmlspecialchars($receipt['original_file_name']); ?>">
+                                    <?php echo htmlspecialchars($receipt['original_file_name']); ?>
+                                </h6>
+                                <p class="small text-muted mb-2">
+                                    <?php echo round($receipt['file_size'] / 1024, 2); ?> KB
+                                </p>
+                                <a href="<?php echo $basePath; ?>uploads/receipts/<?php echo $receipt['file_name']; ?>" 
+                                   class="btn btn-sm btn-primary" target="_blank">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="<?php echo $basePath; ?>uploads/receipts/<?php echo $receipt['file_name']; ?>" 
+                                   class="btn btn-sm btn-secondary" download="<?php echo $receipt['original_file_name']; ?>">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <script>
@@ -310,7 +404,7 @@ $(document).ready(function() {
         color: #000 !important;
     }
     
-    .bg-primary {
+    .bg-primary, .bg-success {
         background-color: #f8f9fa !important;
         color: #000 !important;
     }
