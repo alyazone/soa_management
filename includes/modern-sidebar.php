@@ -83,11 +83,34 @@
                     <span>Claims Management</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/view_application.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>">
+            <li class="nav-item has-submenu">
+                <a href="#" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>" data-toggle="submenu">
                     <i class="fas fa-plane"></i>
-                    <span>Outstation Leave Management</span>
+                    <span>Outstation Leave</span>
+                    <i class="fas fa-chevron-right submenu-arrow"></i>
                 </a>
+                <ul class="submenu <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'show' : ''; ?>">
+                    <li>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/index.php" class="submenu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'index.php' && strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>">
+                            <i class="fas fa-list"></i>
+                            <span>My Applications</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/application_form.php" class="submenu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'application_form.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>New Application</span>
+                        </a>
+                    </li>
+                    <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
+                    <li>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/dashboard.php" class="submenu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'dashboard.php' && strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                </ul>
             </li>
             <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
             <li class="nav-item">
