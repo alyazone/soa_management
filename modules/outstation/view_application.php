@@ -16,17 +16,20 @@ if($_SESSION['position'] != 'Admin'){
     $access_denied = false;
 }
 
+$applications = [];
 if(!$access_denied) {
     try {
-        $stmt = $pdo->query("
-            SELECT oa.*, 
+        $stmt = $pdo->prepare("
+            SELECT oa.*,
             s.full_name as approver_name
             FROM outstation_applications oa
             LEFT JOIN staff s ON oa.approved_by = s.staff_id
-            WHERE oa.staff_id = ?
+            WHERE oa.staff_id = :staff_id
             ORDER BY oa.created_at DESC
         ");
-        $clients = $stmt->fetchAll();
+        $stmt->bindParam(':staff_id', $_SESSION['staff_id']);
+        $stmt->execute();
+        $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch(PDOException $e) {
         $db_error = "Database Error: " . $e->getMessage();
     }
