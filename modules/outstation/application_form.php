@@ -1,10 +1,10 @@
 <?php
 session_start();
-require_once '../config/database.php';
+require_once '../../config/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['staff_id'])) {
-    header("Location: ../modules/auth/login.php");
+    header("Location: ../../modules/auth/login.php");
     exit();
 }
 
@@ -24,7 +24,7 @@ try {
 $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
 $page_title = "Outstation Leave Application";
-include '../includes/header.php';
+include '../../includes/header.php';
 ?>
 
 <style>
@@ -271,7 +271,7 @@ textarea.form-control {
         <p class="info-text">Please complete this form before proceeding with your outstation trip. If your stay is for <strong>one night or more</strong>, you will be eligible to claim outstation leave allowance upon return.</p>
     </div>
 
-    <form id="outstationForm" method="POST" action="../modules/outstation/api/create_application.php">
+    <form id="outstationForm" method="POST" action="api/create_application.php">
         <input type="hidden" name="application_number" value="<?php echo $app_number; ?>">
         <input type="hidden" name="staff_id" value="<?php echo $staff_id; ?>">
         <input type="hidden" name="total_nights" id="total_nights" value="0">
@@ -408,7 +408,7 @@ textarea.form-control {
 
         <!-- Submit Buttons -->
         <div class="btn-group">
-            <button type="button" class="btn btn-secondary" onclick="window.location.href='view_applications.php'">Cancel</button>
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php'">Cancel</button>
             <button type="submit" class="btn btn-primary" id="submitBtn">Submit Application</button>
         </div>
     </form>
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 alert('Application submitted successfully!');
-                window.location.href = 'view_applications.php';
+                window.location.href = 'index.php';
             } else {
                 alert('Error: ' + data.message);
                 submitBtn.disabled = false;
@@ -545,4 +545,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include '../includes/footer.php'; ?>
+<?php include '../../includes/footer.php'; ?>
