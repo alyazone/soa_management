@@ -132,7 +132,7 @@
                 <div class="user-role"><?php echo $_SESSION["position"]; ?></div>
             </div>
             <div class="user-dropdown-menu" id="userDropdownMenu">
-                <a href="/modules/auth/logout.php" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Logout</a>
+               <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/auth/logout.php" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
         <div class="version-info">
