@@ -1,242 +1,161 @@
 <?php
-// Enable error reporting
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 ob_start();
-// Set the base path for includes
 $basePath = '../../../';
+require_once $basePath . "config/database.php";
 
-// Include header and sidebar
-include_once $basePath . "includes/header.php";
-include_once $basePath . "includes/sidebar.php";
-
-// Check if the user has admin privileges
-if($_SESSION['position'] != 'Admin'){
-    echo '<div class="col-md-10 ml-sm-auto px-4"><div class="alert alert-danger mt-3">You do not have permission to access this page.</div></div>';
-    include_once $basePath . "includes/footer.php";
+session_start();
+if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION['position'] != 'Admin'){
+    header("location: " . $basePath . "modules/auth/login.php");
     exit;
 }
 
-// Include database connection
-require_once $basePath . "config/database.php";
+// Delete/Close logic
+if(isset($_GET["action"]) && isset($_GET["id"])){
+    $action = $_GET["action"];
+    $soa_id = $_GET["id"];
+    $redirect_url = "all_soas.php";
 
-// Process delete operation
-if(isset($_GET["action"]) && $_GET["action"] == "delete" && isset($_GET["id"]) && !empty($_GET["id"])){
-   try {
-       // Prepare a delete statement
-       $sql = "DELETE FROM client_soa WHERE soa_id = :id";
-       
-       if($stmt = $pdo->prepare($sql)){
-           // Bind variables to the prepared statement as parameters
-           $stmt->bindParam(":id", $param_id, PDO::PARAM_INT);
-           
-           // Set parameters
-           $param_id = trim($_GET["id"]);
-           
-           // Attempt to execute the prepared statement
-           if($stmt->execute()){
-               // Records deleted successfully. Redirect to landing page
-               header("location: all_soas.php?success=1");
-               exit();
-           } else{
-               $delete_err = "Oops! Something went wrong. Please try again later.";
-           }
-       }
-   } catch(PDOException $e) {
-       $delete_err = "Error: " . $e->getMessage();
-   }
-}
-
-// Process close account operation
-if(isset($_GET["action"]) && $_GET["action"] == "close" && isset($_GET["id"]) && !empty($_GET["id"])){
-    try {
-        // First check the current status
-        $check_stmt = $pdo->prepare("SELECT status FROM client_soa WHERE soa_id = :id");
-        $check_stmt->bindParam(":id", $_GET["id"], PDO::PARAM_INT);
-        $check_stmt->execute();
-        $current_status = $check_stmt->fetchColumn();
-        
-        // Prepare an update statement to close the account
+    if($action == "delete"){
+        $sql = "DELETE FROM client_soa WHERE soa_id = :id";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':id' => $soa_id]);
+        header("location: $redirect_url?success=deleted");
+        exit();
+    } elseif($action == "close"){
         $sql = "UPDATE client_soa SET status = 'Closed' WHERE soa_id = :id";
-        
-        if($stmt = $pdo->prepare($sql)){
-            // Bind variables to the prepared statement as parameters
-            $stmt->bindParam(":id", $param_id, PDO::PARAM_INT);
-            
-            // Set parameters
-            $param_id = trim($_GET["id"]);
-            
-            // Attempt to execute the prepared statement
-            if($stmt->execute()){
-                // Account closed successfully. Redirect to landing page
-                header("location: all_soas.php?success=4");
-                exit();
-            } else{
-                $close_err = "Oops! Something went wrong. Please try again later.";
-            }
-        }
-    } catch(PDOException $e) {
-        $close_err = "Error: " . $e->getMessage();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':id' => $soa_id]);
+        header("location: $redirect_url?success=closed");
+        exit();
     }
 }
 
-// Fetch all Client SOAs
 try {
-   // Check if the client_soa table exists
-   $tableExists = false;
-   $stmt = $pdo->query("SHOW TABLES LIKE 'client_soa'");
-   if ($stmt->rowCount() > 0) {
-       $tableExists = true;
-   }
-   
-   if (!$tableExists) {
-       echo '<div class="alert alert-danger">The client_soa table does not exist in the database. Please create it first.</div>';
-   } else {
-       $stmt = $pdo->query("SELECT s.*, c.client_name 
-                           FROM client_soa s 
-                           JOIN clients c ON s.client_id = c.client_id 
-                           ORDER BY s.issue_date DESC");
-       $soas = $stmt->fetchAll();
-   }
+    $stmt = $pdo->query("
+        SELECT s.*, c.client_name 
+        FROM client_soa s 
+        JOIN clients c ON s.client_id = c.client_id 
+        ORDER BY s.issue_date DESC
+    ");
+    $soas = $stmt->fetchAll();
 } catch(PDOException $e) {
-   echo '<div class="alert alert-danger">Database Error: ' . $e->getMessage() . '</div>';
+    $db_error = "Database Error: " . $e->getMessage();
 }
 ?>
 
-<div class="col-md-10 ml-sm-auto px-4">
-   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-       <h1 class="h2">All Client SOAs</h1>
-       <div class="btn-toolbar mb-2 mb-md-0">
-           <a href="add.php" class="btn btn-sm btn-primary">
-               <i class="fas fa-plus"></i> Create New Client SOA
-           </a>
-           <a href="index.php" class="btn btn-sm btn-secondary ml-2">
-               <i class="fas fa-arrow-left"></i> Back to Clients
-           </a>
-       </div>
-   </div>
-   
-   <?php if(isset($_GET["success"])): ?>
-       <div class="alert alert-success">
-           <?php 
-           if($_GET["success"] == "1") {
-               echo "Client SOA record has been deleted successfully.";
-           } elseif($_GET["success"] == "2") {
-               echo "Client SOA record has been added successfully.";
-           } elseif($_GET["success"] == "3") {
-               echo "Client SOA record has been updated successfully.";
-           } elseif($_GET["success"] == "4") {
-               echo "Account has been closed successfully.";
-           }
-           ?>
-       </div>
-   <?php endif; ?>
-   
-   <?php if(isset($delete_err)): ?>
-       <div class="alert alert-danger">
-           <?php echo $delete_err; ?>
-       </div>
-   <?php endif; ?>
-   
-   <?php if(isset($close_err)): ?>
-       <div class="alert alert-danger">
-           <?php echo $close_err; ?>
-       </div>
-   <?php endif; ?>
-   
-   <div class="card shadow mb-4">
-       <div class="card-header py-3">
-           <h6 class="m-0 font-weight-bold text-primary">All Client SOAs</h6>
-       </div>
-       <div class="card-body">
-           <div class="table-responsive">
-               <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                   <thead>
-                       <tr>
-                           <th>Account #</th>
-                           <th>Client</th>
-                           <th>Issue Date</th>
-                           <th>Due Date</th>
-                           <th>Amount</th>
-                           <th>Status</th>
-                           <th>Actions</th>
-                       </tr>
-                   </thead>
-                   <tbody>
-                       <?php if(isset($soas) && !empty($soas)): ?>
-                           <?php foreach($soas as $soa): ?>
-                           <tr>
-                               <td><?php echo htmlspecialchars($soa['account_number']); ?></td>
-                               <td><?php echo htmlspecialchars($soa['client_name']); ?></td>
-                               <td><?php echo htmlspecialchars($soa['issue_date']); ?></td>
-                               <td><?php echo htmlspecialchars($soa['due_date']); ?></td>
-                               <td>RM <?php echo number_format($soa['total_amount'], 2); ?></td>
-                               <td>
-                                   <span class="badge badge-<?php 
-                                       echo ($soa['status'] == 'Paid') ? 'success' : 
-                                           (($soa['status'] == 'Overdue') ? 'danger' : 
-                                            (($soa['status'] == 'Closed') ? 'secondary' : 'warning')); 
-                                   ?>">
-                                       <?php echo htmlspecialchars($soa['status']); ?>
-                                   </span>
-                               </td>
-                               <td>
-                                   <a href="view.php?id=<?php echo $soa['soa_id']; ?>" class="btn btn-info btn-sm">
-                                       <i class="fas fa-eye"></i>
-                                   </a>
-                                   <?php if($soa['status'] != 'Closed'): ?>
-                                   <a href="edit.php?id=<?php echo $soa['soa_id']; ?>" class="btn btn-primary btn-sm">
-                                       <i class="fas fa-edit"></i>
-                                   </a>
-                                   <?php endif; ?>
-                                   <a href="generate_pdf.php?id=<?php echo $soa['soa_id']; ?>" class="btn btn-success btn-sm" target="_blank">
-                                       <i class="fas fa-file-pdf"></i>
-                                   </a>
-                                   <?php if($soa['status'] != 'Closed'): ?>
-                                   <a href="all_soas.php?action=delete&id=<?php echo $soa['soa_id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this Client SOA?');">
-                                       <i class="fas fa-trash"></i>
-                                   </a>
-                                   <a href="javascript:void(0);" class="btn btn-dark btn-sm" onclick="confirmCloseAccount(<?php echo $soa['soa_id']; ?>, '<?php echo $soa['status']; ?>')">
-                                       <i class="fas fa-lock"></i>
-                                   </a>
-                                   <?php endif; ?>
-                               </td>
-                           </tr>
-                           <?php endforeach; ?>
-                       <?php else: ?>
-                           <tr>
-                               <td colspan="7" class="text-center">No Client SOA records found</td>
-                           </tr>
-                       <?php endif; ?>
-                   </tbody>
-               </table>
-           </div>
-       </div>
-   </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Client SOAs - SOA Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo $basePath; ?>assets/css/modern-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <?php include_once $basePath . "includes/modern-sidebar.php"; ?>
 
-<script>
-function confirmCloseAccount(soaId, status) {
-    let confirmMessage = '';
-    
-    if (status === 'Paid') {
-        confirmMessage = 'Are you sure you want to close this account? This action cannot be undone.';
-    } else if (status === 'Pending') {
-        confirmMessage = 'WARNING: This account is still PENDING. Are you sure you want to close it? This action cannot be undone.';
-    } else if (status === 'Overdue') {
-        confirmMessage = 'WARNING: This account is OVERDUE. Are you sure you want to close it? This action cannot be undone.';
-    }
-    
-    if (confirm(confirmMessage)) {
-        window.location.href = `all_soas.php?action=close&id=${soaId}`;
-    }
-}
-</script>
+    <div class="main-content">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+                    <div class="header-title">
+                        <h1>All Client SOAs</h1>
+                        <p>A complete list of all Statements of Account</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <a href="index.php" class="export-btn secondary"><i class="fas fa-arrow-left"></i> Back to Client List</a>
+                    <a href="add.php" class="export-btn"><i class="fas fa-plus"></i> Create New SOA</a>
+                </div>
+            </div>
+        </header>
 
-<?php
-// Include footer
-include_once $basePath . "includes/footer.php";
-ob_end_flush();
-?>
+        <div class="dashboard-content">
+            <?php if(isset($_GET['success'])): ?>
+                <div class="alert alert-success" data-aos="fade-down">
+                    <div class="alert-content"><i class="fas fa-check-circle"></i>
+                        <span>
+                            <?php
+                            if ($_GET['success'] == 'deleted') echo 'SOA record deleted successfully.';
+                            if ($_GET['success'] == 'closed') echo 'SOA has been marked as Closed.';
+                            if ($_GET['success'] == 'updated') echo 'SOA record has been updated successfully.';
+                            if ($_GET['success'] == 'added') echo 'SOA record has been added successfully.';
+                            ?>
+                        </span>
+                    </div>
+                    <button class="alert-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                </div>
+            <?php endif; ?>
+            <?php if(isset($db_error)): ?>
+                <div class="alert alert-error" data-aos="fade-down"><div class="alert-content"><i class="fas fa-exclamation-circle"></i><span><?php echo $db_error; ?></span></div></div>
+            <?php endif; ?>
+
+            <div class="table-card" data-aos="fade-up">
+                <div class="table-header">
+                    <div class="table-title">
+                        <h3>SOA Ledger</h3>
+                        <p>All client SOAs recorded in the system</p>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>Account #</th>
+                                <th>Client</th>
+                                <th>Issue Date</th>
+                                <th>Due Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if(!empty($soas)): ?>
+                                <?php foreach($soas as $soa): ?>
+                                <tr>
+                                    <td><span class="account-number"><?php echo htmlspecialchars($soa['account_number']); ?></span></td>
+                                    <td><?php echo htmlspecialchars($soa['client_name']); ?></td>
+                                    <td><?php echo date('M d, Y', strtotime($soa['issue_date'])); ?></td>
+                                    <td><?php echo date('M d, Y', strtotime($soa['due_date'])); ?></td>
+                                    <td><span class="amount-display">RM <?php echo number_format($soa['total_amount'], 2); ?></span></td>
+                                    <td><span class="status-badge status-<?php echo strtolower($soa['status']); ?>"><?php echo htmlspecialchars($soa['status']); ?></span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <a href="view.php?id=<?php echo $soa['soa_id']; ?>" class="action-btn action-btn-view" title="View"><i class="fas fa-eye"></i></a>
+                                            <?php if($soa['status'] != 'Closed' && $soa['status'] != 'Paid'): ?>
+                                                <a href="edit.php?id=<?php echo $soa['soa_id']; ?>" class="action-btn action-btn-edit" title="Edit"><i class="fas fa-edit"></i></a>
+                                                <a href="all_soas.php?action=close&id=<?php echo $soa['soa_id']; ?>" onclick="return confirm('Are you sure you want to close this account? This cannot be undone.');" class="action-btn action-btn-close" title="Close"><i class="fas fa-lock"></i></a>
+                                            <?php endif; ?>
+                                             <a href="all_soas.php?action=delete&id=<?php echo $soa['soa_id']; ?>" onclick="return confirm('Are you sure you want to delete this SOA?');" class="action-btn action-btn-delete" title="Delete"><i class="fas fa-trash"></i></a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan="7" class="text-center no-data"><div class="no-data-content"><i class="fas fa-file-invoice-dollar"></i><h3>No SOAs Found</h3><p>There are no SOAs recorded in the system yet.</p></div></td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script src="<?php echo $basePath; ?>assets/js/modern-dashboard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init({ duration: 800, easing: 'ease-in-out', once: true });
+            initializeDashboard();
+        });
+    </script>
+    <style>
+        .alert{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-radius:var(--border-radius);margin-bottom:1.5rem;border:1px solid}.alert-success{background:rgba(16,185,129,.1);border-color:var(--success-color);color:var(--success-color)}.alert-error{background:rgba(239,68,68,.1);border-color:var(--danger-color);color:var(--danger-color)}.alert-content{display:flex;align-items:center;gap:.75rem}.alert-close{background:0 0;border:none;color:inherit;cursor:pointer;padding:.25rem;border-radius:var(--border-radius-sm);transition:var(--transition)}.alert-close:hover{background:rgba(0,0,0,.1)}.account-number{font-family:monospace;font-weight:600;color:var(--primary-color)}.amount-display{font-weight:600;font-size:.875rem;color:var(--gray-800)}.status-badge.status-closed{background:rgba(107,114,128,.1);color:var(--gray-600)}.action-buttons{display:flex;gap:.5rem}.action-btn-view{background:rgba(59,130,246,.1);color:var(--primary-color)}.action-btn-view:hover{background:var(--primary-color);color:white}.action-btn-edit{background:rgba(245,158,11,.1);color:var(--warning-color)}.action-btn-edit:hover{background:var(--warning-color);color:white}.action-btn-close{background:rgba(107,114,128,.1);color:var(--gray-600)}.action-btn-close:hover{background:var(--gray-600);color:white}.action-btn-delete{background:rgba(239,68,68,.1);color:var(--danger-color)}.action-btn-delete:hover{background:var(--danger-color);color:white}.no-data{padding:3rem!important}.no-data-content{text-align:center}.no-data-content i{font-size:3rem;color:var(--gray-300);margin-bottom:1rem}.no-data-content h3{color:var(--gray-700);margin-bottom:.5rem}.no-data-content p{color:var(--gray-500);margin-bottom:1.5rem}
+    </style>
+</body>
+</html>
+<?php ob_end_flush(); ?>

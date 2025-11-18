@@ -15,7 +15,7 @@ try {
     die("❌ ERROR: " . $e->getMessage());
 }
 
-/* Create connection
+/*Create connection
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
     // Set the PDO error mode to exception
@@ -26,6 +26,4 @@ try {
     die("ERROR: Could not connect. " . $e->getMessage());
 }*/
 ?>
-
-
 

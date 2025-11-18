@@ -722,5 +722,110 @@
       border: 1px solid var(--gray-300) !important;
       break-inside: avoid;
     }
+
+    /* Custom styles for table cell content */
+    .client-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .client-avatar {
+      width: 40px;
+      height: 40px;
+      background: var(--primary-color);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      flex-shrink: 0;
+    }
+    .client-name {
+      font-weight: 600;
+      color: var(--gray-900);
+      font-size: 0.875rem;
+    }
+    .client-address {
+      font-size: 0.75rem;
+      color: var(--gray-500);
+    }
+    .contact-person .person-name,
+    .contact-person .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--gray-700);
+    }
+    .contact-person .contact-item {
+      font-size: 0.8rem;
+      color: var(--gray-600);
+    }
+    .contact-person i {
+      color: var(--gray-400);
+      width: 14px;
+      text-align: center;
+    }
+    .soa-count-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--primary-color);
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .amount-display {
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    .amount-display.has-amount {
+      color: var(--danger-color);
+    }
+    .amount-display.no-amount {
+      color: var(--gray-400);
+    }
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .action-btn-view {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--primary-color);
+    }
+    .action-btn-view:hover {
+      background: var(--primary-color);
+      color: white;
+    }
+    .action-btn-add {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success-color);
+    }
+    .action-btn-add:hover {
+      background: var(--success-color);
+      color: white;
+    }
+    .no-data {
+      padding: 3rem !important;
+    }
+    .no-data-content {
+      text-align: center;
+    }
+    .no-data-content h3 {
+      color: var(--gray-700);
+      margin-bottom: 0.5rem;
+    }
+    @media (max-width: 768px) {
+      .client-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .action-buttons {
+        flex-direction: column;
+      }
+    }
+
   }
   

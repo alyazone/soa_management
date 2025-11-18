@@ -463,7 +463,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <div class="logo-container">
                 <img src="../../assets/images/logo.png" alt="KYROL Security Labs Logo" class="logo">
             </div>
-            <h2 class="management-title">KYROL MANAGEMENT CONSOLE</h2>
+            <h2 class="management-title">FINANCE MANAGEMENT CONSOLE</h2>
         </div>
         
         <!-- Right section with navigation and login form -->

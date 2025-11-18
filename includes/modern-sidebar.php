@@ -83,6 +83,12 @@
                     <span>Claims Management</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/view_application.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-plane"></i>
+                    <span>Outstation Leave Management</span>
+                </a>
+            </li>
             <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/excel/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/excel/') !== false) ? 'active' : ''; ?>">

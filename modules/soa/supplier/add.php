@@ -1,330 +1,210 @@
 <?php
 ob_start();
-// Set the base path for includes
 $basePath = '../../../';
-
-// Include header and sidebar
-include_once $basePath . "includes/header.php";
-include_once $basePath . "includes/sidebar.php";
-
-// Include database connection
 require_once $basePath . "config/database.php";
 
-// Define variables and initialize with empty values
-$invoice_number = $supplier_id = $issue_date = $payment_due_date = "";
-$purchase_description = $amount = $payment_status = $payment_method = "";
-$invoice_number_err = $supplier_id_err = $issue_date_err = $payment_due_date_err = "";
-$purchase_description_err = $amount_err = $payment_status_err = "";
+session_start();
+if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION['position'] != 'Admin'){
+    header("location: " . $basePath . "modules/auth/login.php");
+    exit;
+}
 
-// Pre-select supplier if coming from supplier page
+$errors = [];
+$form_data = [
+    'invoice_number' => '', 'supplier_id' => '', 'issue_date' => date('Y-m-d'), 
+    'payment_due_date' => date('Y-m-d', strtotime('+30 days')), 'purchase_description' => '', 
+    'amount' => '', 'payment_status' => 'Pending', 'payment_method' => ''
+];
+
 $preselected_supplier = isset($_GET['supplier_id']) ? $_GET['supplier_id'] : '';
-
-// Fetch suppliers for dropdown
-try {
-    $stmt = $pdo->query("SELECT supplier_id, supplier_name FROM suppliers ORDER BY supplier_name");
-    $suppliers = $stmt->fetchAll();
-} catch(PDOException $e) {
-    echo "Error: " . $e->getMessage();
+if(!empty($preselected_supplier)) {
+    $form_data['supplier_id'] = $preselected_supplier;
 }
 
-// Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
-    // Validate invoice number
-    if(empty(trim($_POST["invoice_number"]))){
-        $invoice_number_err = "Please enter invoice number.";
-    } else{
-        // Check if invoice number already exists
-        $sql = "SELECT soa_id FROM supplier_soa WHERE invoice_number = :invoice_number";
-        
+    $form_data = array_merge($form_data, $_POST);
+
+    if(empty(trim($form_data["invoice_number"]))) $errors['invoice_number'] = "Please enter invoice number.";
+    if(empty($form_data["supplier_id"])) $errors['supplier_id'] = "Please select a supplier.";
+    if(empty($form_data["issue_date"])) $errors['issue_date'] = "Please enter issue date.";
+    if(empty($form_data["payment_due_date"])) $errors['payment_due_date'] = "Please enter payment due date.";
+    if(empty(trim($form_data["purchase_description"]))) $errors['purchase_description'] = "Please enter purchase description.";
+    if(empty(trim($form_data["amount"])) || !is_numeric(trim($form_data["amount"])) || floatval(trim($form_data["amount"])) <= 0) $errors['amount'] = "Please enter a valid positive amount.";
+    if(empty($form_data["payment_status"])) $errors['payment_status'] = "Please select payment status.";
+
+    if(empty($errors)){
+        $sql = "INSERT INTO supplier_soa (invoice_number, supplier_id, issue_date, payment_due_date, purchase_description, amount, payment_status, payment_method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         if($stmt = $pdo->prepare($sql)){
-            $stmt->bindParam(":invoice_number", $param_invoice_number, PDO::PARAM_STR);
-            $param_invoice_number = trim($_POST["invoice_number"]);
-            
-            if($stmt->execute()){
-                if($stmt->rowCount() == 1){
-                    $invoice_number_err = "This invoice number already exists.";
-                } else{
-                    $invoice_number = trim($_POST["invoice_number"]);
-                }
-            } else{
-                echo "Oops! Something went wrong. Please try again later.";
-            }
-            
-            unset($stmt);
+            $created_by = $_SESSION["staff_id"];
+            $stmt->execute([
+                trim($form_data['invoice_number']), $form_data['supplier_id'], $form_data['issue_date'], 
+                $form_data['payment_due_date'], trim($form_data['purchase_description']), trim($form_data['amount']), 
+                $form_data['payment_status'], trim($form_data['payment_method']), $created_by
+            ]);
+            header("location: index.php?success=added");
+            exit();
         }
     }
-    
-    // Validate supplier
-    if(empty($_POST["supplier_id"])){
-        $supplier_id_err = "Please select supplier.";
-    } else{
-        $supplier_id = $_POST["supplier_id"];
-    }
-    
-    // Validate issue date
-    if(empty($_POST["issue_date"])){
-        $issue_date_err = "Please enter issue date.";
-    } else{
-        $issue_date = $_POST["issue_date"];
-    }
-    
-    // Validate payment due date
-    if(empty($_POST["payment_due_date"])){
-        $payment_due_date_err = "Please enter payment due date.";
-    } else{
-        $payment_due_date = $_POST["payment_due_date"];
-    }
-    
-    // Validate purchase description
-    if(empty(trim($_POST["purchase_description"]))){
-        $purchase_description_err = "Please enter purchase description.";
-    } else{
-        $purchase_description = trim($_POST["purchase_description"]);
-    }
-    
-    // Validate amount
-    if(empty(trim($_POST["amount"]))){
-        $amount_err = "Please enter amount.";
-    } elseif(!is_numeric(trim($_POST["amount"])) || floatval(trim($_POST["amount"])) <= 0){
-        $amount_err = "Please enter a valid positive number.";
-    } else{
-        $amount = trim($_POST["amount"]);
-    }
-    
-    // Validate payment status
-    if(empty($_POST["payment_status"])){
-        $payment_status_err = "Please select payment status.";
-    } else{
-        $payment_status = $_POST["payment_status"];
-    }
-    
-    // Get payment method if provided
-    $payment_method = !empty($_POST["payment_method"]) ? trim($_POST["payment_method"]) : NULL;
-    
-    // Check input errors before inserting in database
-    if(empty($invoice_number_err) && empty($supplier_id_err) && empty($issue_date_err) && 
-       empty($payment_due_date_err) && empty($purchase_description_err) && empty($amount_err) && 
-       empty($payment_status_err)){
-        
-        // Prepare an insert statement
-        $sql = "INSERT INTO supplier_soa (invoice_number, supplier_id, issue_date, payment_due_date, 
-                purchase_description, amount, payment_status, payment_method, created_by) 
-                VALUES (:invoice_number, :supplier_id, :issue_date, :payment_due_date, 
-                :purchase_description, :amount, :payment_status, :payment_method, :created_by)";
-         
-        if($stmt = $pdo->prepare($sql)){
-            // Bind variables to the prepared statement as parameters
-            $stmt->bindParam(":invoice_number", $param_invoice_number, PDO::PARAM_STR);
-            $stmt->bindParam(":supplier_id", $param_supplier_id, PDO::PARAM_INT);
-            $stmt->bindParam(":issue_date", $param_issue_date, PDO::PARAM_STR);
-            $stmt->bindParam(":payment_due_date", $param_payment_due_date, PDO::PARAM_STR);
-            $stmt->bindParam(":purchase_description", $param_purchase_description, PDO::PARAM_STR);
-            $stmt->bindParam(":amount", $param_amount, PDO::PARAM_STR);
-            $stmt->bindParam(":payment_status", $param_payment_status, PDO::PARAM_STR);
-            $stmt->bindParam(":payment_method", $param_payment_method, PDO::PARAM_STR);
-            $stmt->bindParam(":created_by", $param_created_by, PDO::PARAM_INT);
-            
-            // Set parameters
-            $param_invoice_number = $invoice_number;
-            $param_supplier_id = $supplier_id;
-            $param_issue_date = $issue_date;
-            $param_payment_due_date = $payment_due_date;
-            $param_purchase_description = $purchase_description;
-            $param_amount = $amount;
-            $param_payment_status = $payment_status;
-            $param_payment_method = $payment_method;
-            $param_created_by = $_SESSION["staff_id"];
-            
-            // Attempt to execute the prepared statement
-            if($stmt->execute()){
-                // Records created successfully. Redirect to index page
-                header("location: index.php?success=2");
-                exit();
-            } else{
-                echo "Oops! Something went wrong. Please try again later.";
-            }
-        }
-         
-        // Close statement
-        unset($stmt);
-    }
-    
-    // Close connection
-    unset($pdo);
+}
+
+try {
+    $suppliers = $pdo->query("SELECT supplier_id, supplier_name FROM suppliers ORDER BY supplier_name")->fetchAll();
+} catch(PDOException $e) {
+    $suppliers = [];
 }
 ?>
 
-<div class="col-md-10 ml-sm-auto px-4">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Create New Supplier SOA</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="index.php" class="btn btn-sm btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to List
-            </a>
-        </div>
-    </div>
-    
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Supplier SOA Information</h6>
-        </div>
-        <div class="card-body">
-            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-                <!-- Basic Information Section -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="m-0 font-weight-bold text-primary">
-                            <i class="fas fa-info-circle mr-2"></i>Basic Information
-                            <span class="badge badge-warning ml-2">Required</span>
-                        </h6>
-                        <small class="text-muted">Basic information for the Supplier SOA record</small>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label>
-                                    <span class="text-danger">*</span> Invoice Number
-                                </label>
-                                <input type="text" name="invoice_number" class="form-control <?php echo (!empty($invoice_number_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $invoice_number; ?>">
-                                <span class="invalid-feedback"><?php echo $invoice_number_err; ?></span>
-                            </div>
-                            <div class="form-group col-md-6">
-                                <label>
-                                    <span class="text-danger">*</span> Supplier
-                                </label>
-                                <select name="supplier_id" class="form-control <?php echo (!empty($supplier_id_err)) ? 'is-invalid' : ''; ?>">
-                                    <option value="">Select Supplier</option>
-                                    <?php foreach($suppliers as $supplier): ?>
-                                        <option value="<?php echo $supplier['supplier_id']; ?>" <?php echo ($supplier['supplier_id'] == $preselected_supplier || $supplier['supplier_id'] == $supplier_id) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($supplier['supplier_name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <span class="invalid-feedback"><?php echo $supplier_id_err; ?></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Transaction Details Section -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="m-0 font-weight-bold text-primary">
-                            <i class="fas fa-file-invoice-dollar mr-2"></i>Transaction Details
-                            <span class="badge badge-warning ml-2">Required</span>
-                        </h6>
-                        <small class="text-muted">Details about the transaction</small>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label>
-                                    <span class="text-danger">*</span> Issue Date
-                                </label>
-                                <input type="date" name="issue_date" class="form-control <?php echo (!empty($issue_date_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $issue_date; ?>">
-                                <span class="invalid-feedback"><?php echo $issue_date_err; ?></span>
-                            </div>
-                            <div class="form-group col-md-6">
-                                <label>
-                                    <span class="text-danger">*</span> Payment Due Date
-                                </label>
-                                <input type="date" name="payment_due_date" class="form-control <?php echo (!empty($payment_due_date_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $payment_due_date; ?>">
-                                <span class="invalid-feedback"><?php echo $payment_due_date_err; ?></span>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>
-                                <span class="text-danger">*</span> Purchase Description
-                            </label>
-                            <textarea name="purchase_description" class="form-control <?php echo (!empty($purchase_description_err)) ? 'is-invalid' : ''; ?>" rows="3"><?php echo $purchase_description; ?></textarea>
-                            <span class="invalid-feedback"><?php echo $purchase_description_err; ?></span>
-                            <small class="form-text text-muted">Provide a detailed description of the purchase</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Financial Details Section -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="m-0 font-weight-bold text-primary">
-                            <i class="fas fa-money-bill-wave mr-2"></i>Financial Details
-                            <span class="badge badge-warning ml-2">Required</span>
-                        </h6>
-                        <small class="text-muted">Financial information for the Supplier SOA</small>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label>
-                                    <span class="text-danger">*</span> Amount (RM)
-                                </label>
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">RM</span>
-                                    </div>
-                                    <input type="text" name="amount" class="form-control <?php echo (!empty($amount_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $amount; ?>">
-                                    <span class="invalid-feedback"><?php echo $amount_err; ?></span>
-                                </div>
-                            </div>
-                            <div class="form-group col-md-6">
-                                <label>
-                                    <span class="text-danger">*</span> Payment Status
-                                </label>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="payment_status" id="statusPending" value="Pending" <?php echo ($payment_status == "Pending" || $payment_status == "") ? 'checked' : ''; ?>>
-                                    <label class="form-check-label" for="statusPending">
-                                        <span class="badge badge-warning">Pending</span>
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="payment_status" id="statusPaid" value="Paid" <?php echo ($payment_status == "Paid") ? 'checked' : ''; ?>>
-                                    <label class="form-check-label" for="statusPaid">
-                                        <span class="badge badge-success">Paid</span>
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="payment_status" id="statusOverdue" value="Overdue" <?php echo ($payment_status == "Overdue") ? 'checked' : ''; ?>>
-                                    <label class="form-check-label" for="statusOverdue">
-                                        <span class="badge badge-danger">Overdue</span>
-                                    </label>
-                                </div>
-                                <?php if (!empty($payment_status_err)): ?>
-                                    <div class="text-danger small mt-1"><?php echo $payment_status_err; ?></div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Payment Method (if paid)</label>
-                            <select name="payment_method" class="form-control">
-                                <option value="">Select Payment Method</option>
-                                <option value="Cash">Cash</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                                <option value="Check">Check</option>
-                                <option value="Credit Card">Credit Card</option>
-                            </select>
-                            <small class="form-text text-muted">Optional - only required if payment status is "Paid"</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Form Actions -->
-                <div class="form-group text-center">
-                    <button type="submit" class="btn btn-primary btn-lg px-5">
-                        <i class="fas fa-save mr-2"></i>Create Supplier SOA
-                    </button>
-                    <a href="index.php" class="btn btn-secondary btn-lg ml-2 px-5">
-                        <i class="fas fa-times mr-2"></i>Cancel
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Supplier SOA - SOA Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo $basePath; ?>assets/css/modern-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3b82f6; --primary-dark: #2563eb; --success-color: #10b981; --warning-color: #f59e0b; --danger-color: #ef4444; --info-color: #06b6d4; --secondary-color: #6b7280;
+            --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827;
+            --sidebar-width: 280px; --header-height: 80px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05); --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --border-radius: 12px; --border-radius-sm: 8px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Inter", sans-serif; background-color: var(--gray-50); color: var(--gray-900); line-height: 1.6; }
+        .main-content { margin-left: var(--sidebar-width); min-height: 100vh; transition: var(--transition); }
+        .dashboard-header { background: white; border-bottom: 1px solid var(--gray-200); height: var(--header-height); position: sticky; top: 0; z-index: 40; }
+        .header-content { display: flex; align-items: center; justify-content: space-between; height: 100%; padding: 0 2rem; }
+        .header-left { display: flex; align-items: center; gap: 1rem; }
+        .header-title h1 { font-size: 1.875rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.25rem; }
+        .header-title p { color: var(--gray-600); font-size: 0.875rem; }
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+        .export-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border: 1px solid transparent; background: var(--primary-color); color: white; border-radius: var(--border-radius-sm); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: var(--transition); text-decoration: none; }
+        .export-btn:hover { background: var(--primary-dark); box-shadow: var(--shadow-md); }
+        .export-btn.secondary { background-color: var(--secondary-color); } .export-btn.secondary:hover { background-color: var(--gray-700); }
+        .dashboard-content { padding: 2rem; max-width: 1600px; margin: 0 auto; }
+        .form-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow); border: 1px solid var(--gray-200); }
+        .modern-form { padding: 2rem; }
+        .form-section { margin-bottom: 2.5rem; }
+        .section-header { border-bottom: 1px solid var(--gray-200); padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
+        .section-header h4 { font-size: 1.125rem; font-weight: 600; color: var(--gray-800); display: flex; align-items: center; gap: 0.75rem; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .form-group.full-width { grid-column: 1 / -1; }
+        .form-label { display: block; font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem; font-size: 0.875rem; }
+        .form-label.required::after { content: ' *'; color: var(--danger-color); }
+        .form-input, .form-textarea, .form-select { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius-sm); background: var(--gray-50); transition: var(--transition); }
+        .form-input:focus, .form-textarea:focus, .form-select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); background: white; }
+        .form-input.error, .form-textarea.error, .form-select.error { border-color: var(--danger-color); }
+        .error-message { color: var(--danger-color); font-size: 0.75rem; margin-top: 0.25rem; display: flex; align-items: center; gap: 0.25rem; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; }
+        .btn { padding: 0.75rem 1.5rem; border-radius: var(--border-radius-sm); font-weight: 500; text-decoration: none; transition: var(--transition); display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; }
+        .btn-primary { background: var(--primary-color); color: white; } .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--gray-200); color: var(--gray-800); } .btn-secondary:hover { background: var(--gray-300); }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <?php include_once $basePath . "includes/modern-sidebar.php"; ?>
 
-<?php
-// Include footer
-include_once $basePath . "includes/footer.php";
-ob_end_flush();
-?>
+    <div class="main-content">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="header-title">
+                        <h1>Add New Supplier SOA</h1>
+                        <p>Record a new invoice or statement from a supplier</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <a href="index.php" class="export-btn secondary"><i class="fas fa-arrow-left"></i> Back to List</a>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <div class="form-card">
+                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?><?php if($preselected_supplier) echo '?supplier_id='.$preselected_supplier; ?>" method="post" class="modern-form">
+                    <div class="form-body">
+                        <div class="form-section">
+                            <div class="section-header"><h4><i class="fas fa-truck"></i> Supplier & Invoice Details</h4></div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label required">Invoice Number</label>
+                                    <input type="text" name="invoice_number" class="form-input <?php echo isset($errors['invoice_number']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['invoice_number']); ?>">
+                                    <?php if(isset($errors['invoice_number'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['invoice_number']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required">Supplier</label>
+                                    <select name="supplier_id" class="form-select <?php echo isset($errors['supplier_id']) ? 'error' : ''; ?>">
+                                        <option value="">Select a supplier...</option>
+                                        <?php foreach($suppliers as $supplier): ?>
+                                            <option value="<?php echo $supplier['supplier_id']; ?>" <?php echo ($supplier['supplier_id'] == $form_data['supplier_id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($supplier['supplier_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <?php if(isset($errors['supplier_id'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['supplier_id']; ?></span><?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="section-header"><h4><i class="fas fa-calendar-alt"></i> Dates</h4></div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label required">Issue Date</label>
+                                    <input type="date" name="issue_date" class="form-input <?php echo isset($errors['issue_date']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['issue_date']); ?>">
+                                    <?php if(isset($errors['issue_date'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['issue_date']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required">Payment Due Date</label>
+                                    <input type="date" name="payment_due_date" class="form-input <?php echo isset($errors['payment_due_date']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['payment_due_date']); ?>">
+                                    <?php if(isset($errors['payment_due_date'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['payment_due_date']; ?></span><?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="section-header"><h4><i class="fas fa-dollar-sign"></i> Financial Details</h4></div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label required">Amount (RM)</label>
+                                    <input type="number" step="0.01" name="amount" class="form-input <?php echo isset($errors['amount']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['amount']); ?>">
+                                    <?php if(isset($errors['amount'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['amount']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required">Payment Status</label>
+                                    <select name="payment_status" class="form-select <?php echo isset($errors['payment_status']) ? 'error' : ''; ?>">
+                                        <option value="Pending" <?php echo ($form_data['payment_status'] == 'Pending') ? 'selected' : ''; ?>>Pending</option>
+                                        <option value="Paid" <?php echo ($form_data['payment_status'] == 'Paid') ? 'selected' : ''; ?>>Paid</option>
+                                        <option value="Overdue" <?php echo ($form_data['payment_status'] == 'Overdue') ? 'selected' : ''; ?>>Overdue</option>
+                                    </select>
+                                    <?php if(isset($errors['payment_status'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['payment_status']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label class="form-label">Payment Method (if paid)</label>
+                                    <input type="text" name="payment_method" class="form-input" value="<?php echo htmlspecialchars($form_data['payment_method']); ?>" placeholder="e.g., Bank Transfer, Cash">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="section-header"><h4><i class="fas fa-align-left"></i> Purchase Description</h4></div>
+                            <div class="form-group full-width">
+                                <textarea name="purchase_description" class="form-textarea <?php echo isset($errors['purchase_description']) ? 'error' : ''; ?>" rows="4" placeholder="Enter service or product details..."><?php echo htmlspecialchars($form_data['purchase_description']); ?></textarea>
+                                <?php if(isset($errors['purchase_description'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['purchase_description']; ?></span><?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Create SOA</button>
+                        <a href="index.php" class="btn btn-secondary"><i class="fas fa-times"></i> Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+<?php ob_end_flush(); ?>
