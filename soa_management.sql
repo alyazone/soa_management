@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 11, 2025 at 05:09 AM
+-- Generation Time: Nov 18, 2025 at 08:38 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -365,6 +365,83 @@ INSERT INTO `mileage_rates` (`rate_id`, `vehicle_type`, `km_threshold`, `rate_pe
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `outstation_applications`
+--
+
+CREATE TABLE `outstation_applications` (
+  `application_id` int(11) NOT NULL,
+  `application_number` varchar(50) NOT NULL,
+  `staff_id` int(11) NOT NULL,
+  `purpose` varchar(255) NOT NULL,
+  `destination` varchar(255) NOT NULL,
+  `departure_date` date NOT NULL,
+  `departure_time` time DEFAULT NULL,
+  `return_date` date NOT NULL,
+  `return_time` time DEFAULT NULL,
+  `total_nights` int(11) NOT NULL DEFAULT 0,
+  `is_claimable` tinyint(1) NOT NULL DEFAULT 0,
+  `transportation_mode` varchar(100) NOT NULL,
+  `estimated_cost` decimal(10,2) DEFAULT 0.00,
+  `accommodation_details` text DEFAULT NULL,
+  `remarks` text DEFAULT NULL,
+  `status` enum('Pending','Approved','Rejected','Cancelled','Completed') NOT NULL DEFAULT 'Pending',
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `rejection_reason` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `outstation_claims`
+--
+
+CREATE TABLE `outstation_claims` (
+  `claim_id` int(11) NOT NULL,
+  `application_id` int(11) NOT NULL,
+  `staff_id` int(11) NOT NULL,
+  `claim_date` date NOT NULL,
+  `claim_status` enum('Submitted','Approved','Rejected','Paid') NOT NULL DEFAULT 'Submitted',
+  `claim_amount` decimal(10,2) DEFAULT 0.00,
+  `actual_expenses` decimal(10,2) DEFAULT 0.00,
+  `supporting_documents` text DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `processed_by` int(11) DEFAULT NULL,
+  `processed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `outstation_settings`
+--
+
+CREATE TABLE `outstation_settings` (
+  `setting_id` int(11) NOT NULL,
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text NOT NULL,
+  `description` text DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `outstation_settings`
+--
+
+INSERT INTO `outstation_settings` (`setting_id`, `setting_key`, `setting_value`, `description`, `updated_by`, `updated_at`) VALUES
+(1, 'minimum_nights_claimable', '1', 'Minimum number of nights required to qualify for outstation leave claim', NULL, '2025-11-18 07:38:04'),
+(2, 'default_allowance_per_day', '100.00', 'Default daily allowance amount in RM', NULL, '2025-11-18 07:38:04'),
+(3, 'require_manager_approval', '1', 'Whether applications require manager approval (1=yes, 0=no)', NULL, '2025-11-18 07:38:04'),
+(4, 'auto_approve_days', '0', 'Number of days after which pending applications are auto-approved (0=disabled)', NULL, '2025-11-18 07:38:04');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `soa`
 --
 
@@ -568,6 +645,37 @@ ALTER TABLE `mileage_rates`
   ADD PRIMARY KEY (`rate_id`);
 
 --
+-- Indexes for table `outstation_applications`
+--
+ALTER TABLE `outstation_applications`
+  ADD PRIMARY KEY (`application_id`),
+  ADD UNIQUE KEY `application_number` (`application_number`),
+  ADD KEY `fk_staff` (`staff_id`),
+  ADD KEY `fk_approver` (`approved_by`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_departure_date` (`departure_date`),
+  ADD KEY `idx_is_claimable` (`is_claimable`),
+  ADD KEY `idx_application_number` (`application_number`),
+  ADD KEY `idx_created_at` (`created_at`);
+
+--
+-- Indexes for table `outstation_claims`
+--
+ALTER TABLE `outstation_claims`
+  ADD PRIMARY KEY (`claim_id`),
+  ADD KEY `fk_claim_application` (`application_id`),
+  ADD KEY `fk_claim_staff` (`staff_id`),
+  ADD KEY `fk_claim_processor` (`processed_by`),
+  ADD KEY `idx_claim_status` (`claim_status`);
+
+--
+-- Indexes for table `outstation_settings`
+--
+ALTER TABLE `outstation_settings`
+  ADD PRIMARY KEY (`setting_id`),
+  ADD UNIQUE KEY `setting_key` (`setting_key`);
+
+--
 -- Indexes for table `soa`
 --
 ALTER TABLE `soa`
@@ -669,6 +777,24 @@ ALTER TABLE `mileage_rates`
   MODIFY `rate_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT for table `outstation_applications`
+--
+ALTER TABLE `outstation_applications`
+  MODIFY `application_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `outstation_claims`
+--
+ALTER TABLE `outstation_claims`
+  MODIFY `claim_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `outstation_settings`
+--
+ALTER TABLE `outstation_settings`
+  MODIFY `setting_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT for table `soa`
 --
 ALTER TABLE `soa`
@@ -750,6 +876,21 @@ ALTER TABLE `inventory_transactions`
   ADD CONSTRAINT `inventory_transactions_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `inventory_items` (`item_id`),
   ADD CONSTRAINT `inventory_transactions_ibfk_2` FOREIGN KEY (`assigned_to`) REFERENCES `staff` (`staff_id`),
   ADD CONSTRAINT `inventory_transactions_ibfk_3` FOREIGN KEY (`performed_by`) REFERENCES `staff` (`staff_id`);
+
+--
+-- Constraints for table `outstation_applications`
+--
+ALTER TABLE `outstation_applications`
+  ADD CONSTRAINT `fk_outstation_approver` FOREIGN KEY (`approved_by`) REFERENCES `staff` (`staff_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_outstation_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `outstation_claims`
+--
+ALTER TABLE `outstation_claims`
+  ADD CONSTRAINT `fk_claim_application` FOREIGN KEY (`application_id`) REFERENCES `outstation_applications` (`application_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_claim_processor` FOREIGN KEY (`processed_by`) REFERENCES `staff` (`staff_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_claim_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `soa`
