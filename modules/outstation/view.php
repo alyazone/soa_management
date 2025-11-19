@@ -94,6 +94,10 @@ try {
                         <i class="fas fa-arrow-left"></i>
                         Back to List
                     </a>
+                    <a href="generate_pdf.php?id=<?php echo $application_id; ?>" class="export-btn" style="margin-left: 10px;" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                        Download PDF
+                    </a>
                     <?php if($application['status'] == 'Pending' && ($application['staff_id'] == $_SESSION['staff_id'] || $is_admin_or_manager)): ?>
                     <a href="edit.php?id=<?php echo $application_id; ?>" class="export-btn" style="margin-left: 10px;">
                         <i class="fas fa-edit"></i>
