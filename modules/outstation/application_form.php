@@ -28,7 +28,7 @@ try {
 $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
 $page_title = "Outstation Leave Application";
-include '../../includes/header.php';
+//include '../../includes/header.php';
 ?>
 
 <style>
