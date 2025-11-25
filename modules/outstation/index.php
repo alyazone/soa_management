@@ -185,7 +185,7 @@ try {
             <!-- Statistics Cards -->
             <div class="stats-grid" data-aos="fade-up">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--primary-color);">
+                    <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary-color);">
                         <i class="fas fa-clipboard-list"></i>
                     </div>
                     <div class="stat-details">
@@ -196,7 +196,7 @@ try {
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning-color);">
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.2); color: var(--warning-color);">
                         <i class="fas fa-clock"></i>
                     </div>
                     <div class="stat-details">
@@ -207,7 +207,7 @@ try {
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success-color);">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success-color);">
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="stat-details">
@@ -218,7 +218,7 @@ try {
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: rgba(6, 182, 212, 0.1); color: var(--info-color);">
+                    <div class="stat-icon" style="background: rgba(6, 182, 212, 0.2); color: var(--info-color);">
                         <i class="fas fa-hand-holding-usd"></i>
                     </div>
                     <div class="stat-details">
