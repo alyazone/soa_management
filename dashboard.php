@@ -12,6 +12,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     exit;
 }
 
+// Check if user has permission to access dashboard (Admin or Manager only)
+if($_SESSION["position"] != "Admin" && $_SESSION["position"] != "Manager"){
+    header("location: modules/outstation/index.php");
+    exit;
+}
+
 // Get counts for dashboard
 try {
     // Count clients

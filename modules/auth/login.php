@@ -57,16 +57,21 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                         if(password_verify($password, $hashed_password)){
                             // Password is correct, so start a new session
                             session_start();
-                            
+
                             // Store data in session variables
                             $_SESSION["loggedin"] = true;
                             $_SESSION["staff_id"] = $id;
                             $_SESSION["username"] = $username;
                             $_SESSION["full_name"] = $full_name;
-                            $_SESSION["position"] = $position;                            
-                            
-                            // Redirect user to dashboard page
-                            header("location: ../../dashboard.php");
+                            $_SESSION["position"] = $position;
+
+                            // Redirect based on user role
+                            if($position == "Admin" || $position == "Manager"){
+                                header("location: ../../dashboard.php");
+                            } else {
+                                // Staff users go to their outstation applications page
+                                header("location: ../../modules/outstation/index.php");
+                            }
                         } else{
                             // Password is not valid, display a generic error message
                             $login_err = "Invalid username or password.";
