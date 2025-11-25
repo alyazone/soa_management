@@ -18,12 +18,6 @@ if($_SESSION['position'] != 'Admin'){
     exit;
 }
 
-// Check if id parameter is set
-if(empty($_GET["id"])){
-    header("location: index.php");
-    exit();
-}
-
 // Define variables and initialize with empty values
 $item_name = $category_id = $supplier_id = $serial_number = $model_number = "";
 $purchase_date = $purchase_price = $warranty_expiry = $status = $location = $notes = "";
@@ -47,9 +41,9 @@ try {
 }
 
 // Processing form data when form is submitted
-if($_SERVER["REQUEST_METHOD"] == "POST"){
+if(isset($_POST["item_id"]) && !empty($_POST["item_id"])){
     // Get hidden input value
-    $id = $_POST["id"];
+    $item_id = $_POST["item_id"];
 
     // Validate item name
     if(empty(trim($_POST["item_name"]))){
@@ -110,23 +104,16 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     // Validate notes (optional)
     $notes = trim($_POST["notes"]);
 
-    // Check input errors before updating the database
+    // Check input errors before inserting in database
     if(empty($item_name_err) && empty($category_id_err) &&
        empty($purchase_date_err) && empty($purchase_price_err) && empty($status_err)){
 
-        // Get current status before update
-        $stmt = $pdo->prepare("SELECT status FROM inventory_items WHERE item_id = :id");
-        $stmt->bindParam(":id", $id, PDO::PARAM_INT);
-        $stmt->execute();
-        $current_item = $stmt->fetch();
-        $current_status = $current_item['status'];
-
         // Prepare an update statement
-        $sql = "UPDATE inventory_items SET item_name = :item_name, category_id = :category_id,
-                supplier_id = :supplier_id, serial_number = :serial_number, model_number = :model_number,
-                purchase_date = :purchase_date, purchase_price = :purchase_price,
-                warranty_expiry = :warranty_expiry, status = :status, location = :location,
-                notes = :notes WHERE item_id = :id";
+        $sql = "UPDATE inventory_items SET item_name=:item_name, category_id=:category_id, supplier_id=:supplier_id,
+                serial_number=:serial_number, model_number=:model_number, purchase_date=:purchase_date,
+                purchase_price=:purchase_price, warranty_expiry=:warranty_expiry, status=:status,
+                location=:location, notes=:notes, updated_at=NOW()
+                WHERE item_id=:item_id";
 
         if($stmt = $pdo->prepare($sql)){
             // Bind variables to the prepared statement as parameters
@@ -145,12 +132,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             $stmt->bindParam(":status", $param_status, PDO::PARAM_STR);
             $stmt->bindParam(":location", $param_location, PDO::PARAM_STR);
             $stmt->bindParam(":notes", $param_notes, PDO::PARAM_STR);
-            $stmt->bindParam(":id", $param_id, PDO::PARAM_INT);
+            $stmt->bindParam(":item_id", $param_item_id, PDO::PARAM_INT);
 
             // Set parameters
             $param_item_name = $item_name;
             $param_category_id = $category_id;
-            $param_supplier_id = $supplier_id;
             $param_serial_number = $serial_number;
             $param_model_number = $model_number;
             $param_purchase_date = $purchase_date;
@@ -159,26 +145,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             $param_status = $status;
             $param_location = $location;
             $param_notes = $notes;
-            $param_id = $id;
+            $param_item_id = $item_id;
 
             // Attempt to execute the prepared statement
             if($stmt->execute()){
-                // If status has changed, create a transaction record
-                if($current_status != $status) {
-                    $transaction_sql = "INSERT INTO inventory_transactions (item_id, transaction_type, from_status, to_status, transaction_date, notes, performed_by)
-                                       VALUES (:item_id, 'Status Change', :from_status, :to_status, NOW(), 'Status updated via edit form', :performed_by)";
-
-                    if($trans_stmt = $pdo->prepare($transaction_sql)){
-                        $trans_stmt->bindParam(":item_id", $id, PDO::PARAM_INT);
-                        $trans_stmt->bindParam(":from_status", $current_status, PDO::PARAM_STR);
-                        $trans_stmt->bindParam(":to_status", $status, PDO::PARAM_STR);
-                        $trans_stmt->bindParam(":performed_by", $_SESSION["staff_id"], PDO::PARAM_INT);
-                        $trans_stmt->execute();
-                    }
-                }
-
-                // Records updated successfully. Redirect to index page
-                header("location: index.php?success=2");
+                // Records updated successfully. Redirect to landing page
+                header("location: index.php?success=1");
                 exit();
             } else{
                 echo "Oops! Something went wrong. Please try again later.";
@@ -188,35 +160,58 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         // Close statement
         unset($stmt);
     }
-} else {
-    // Fetch item data
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM inventory_items WHERE item_id = :id");
-        $stmt->bindParam(":id", $_GET["id"], PDO::PARAM_INT);
-        $stmt->execute();
 
-        if($stmt->rowCount() != 1){
-            header("location: index.php");
-            exit();
+    // Close connection
+    unset($pdo);
+} else{
+    // Check existence of id parameter before processing further
+    if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
+        // Get URL parameter
+        $item_id =  trim($_GET["id"]);
+
+        // Prepare a select statement
+        $sql = "SELECT * FROM inventory_items WHERE item_id = :item_id";
+        if($stmt = $pdo->prepare($sql)){
+            // Bind variables to the prepared statement as parameters
+            $stmt->bindParam(":item_id", $param_item_id);
+
+            // Set parameters
+            $param_item_id = $item_id;
+
+            // Attempt to execute the prepared statement
+            if($stmt->execute()){
+                if($stmt->rowCount() == 1){
+                    // Fetch result row as an associative array
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    // Retrieve individual field value
+                    $item_name = $row["item_name"];
+                    $category_id = $row["category_id"];
+                    $supplier_id = $row["supplier_id"];
+                    $serial_number = $row["serial_number"];
+                    $model_number = $row["model_number"];
+                    $purchase_date = $row["purchase_date"];
+                    $purchase_price = $row["purchase_price"];
+                    $warranty_expiry = $row["warranty_expiry"];
+                    $status = $row["status"];
+                    $location = $row["location"];
+                    $notes = $row["notes"];
+                } else{
+                    // URL doesn't contain valid id. Redirect to error page
+                    header("location: index.php?error=1");
+                    exit();
+                }
+            } else{
+                echo "Oops! Something went wrong. Please try again later.";
+            }
         }
 
-        $item = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        // Set values
-        $item_name = $item['item_name'];
-        $category_id = $item['category_id'];
-        $supplier_id = $item['supplier_id'];
-        $serial_number = $item['serial_number'];
-        $model_number = $item['model_number'];
-        $purchase_date = $item['purchase_date'];
-        $purchase_price = $item['purchase_price'];
-        $warranty_expiry = $item['warranty_expiry'];
-        $status = $item['status'];
-        $location = $item['location'];
-        $notes = $item['notes'];
-
-    } catch(PDOException $e) {
-        die("ERROR: Could not fetch item. " . $e->getMessage());
+        // Close statement
+        unset($stmt);
+    }  else{
+        // URL doesn't contain id parameter. Redirect to error page
+        header("location: index.php?error=1");
+        exit();
     }
 }
 ?>
@@ -236,6 +231,242 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- AOS Animation -->
     <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    
+    <!-- Added inline critical styles to override Tailwind's Preflight reset -->
+    <style>
+        /* Form Input Styles - Override Tailwind Preflight */
+        .form-input,
+        input.form-input,
+        select.form-input,
+        textarea.form-input,
+        .form-container input[type="text"],
+        .form-container input[type="date"],
+        .form-container input[type="number"],
+        .form-container input[type="email"],
+        .form-container input[type="password"],
+        .form-container input[type="tel"],
+        .form-container select,
+        .form-container textarea {
+            display: block !important;
+            width: 100% !important;
+            padding: 0.75rem 1rem !important;
+            font-size: 0.95rem !important;
+            font-weight: 400 !important;
+            line-height: 1.5 !important;
+            color: #1e293b !important;
+            background-color: #ffffff !important;
+            background-clip: padding-box !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 0.5rem !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+        }
+
+        .form-input:focus,
+        input.form-input:focus,
+        select.form-input:focus,
+        textarea.form-input:focus,
+        .form-container input:focus,
+        .form-container select:focus,
+        .form-container textarea:focus {
+            border-color: #3b82f6 !important;
+            outline: 0 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+        }
+
+        .form-container select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+            background-position: right 0.75rem center !important;
+            background-repeat: no-repeat !important;
+            background-size: 1.25rem !important;
+            padding-right: 2.5rem !important;
+        }
+
+        .form-container textarea {
+            min-height: 120px !important;
+            resize: vertical !important;
+        }
+
+        .form-container {
+            padding: 1.5rem !important;
+        }
+
+        .form-section {
+            background: #f8fafc !important;
+            border-radius: 0.75rem !important;
+            padding: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+
+        .form-section-title {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+            color: #1e293b !important;
+            margin-bottom: 1.25rem !important;
+            padding-bottom: 0.75rem !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+
+        .form-section-title i {
+            color: #3b82f6 !important;
+        }
+
+        .form-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 1.25rem !important;
+            margin-bottom: 1.25rem !important;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        .form-group {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2 !important;
+        }
+
+        @media (max-width: 768px) {
+            .form-group.full-width {
+                grid-column: span 1 !important;
+            }
+        }
+
+        .form-label {
+            display: block !important;
+            font-weight: 500 !important;
+            font-size: 0.875rem !important;
+            color: #475569 !important;
+            margin-bottom: 0.5rem !important;
+        }
+
+        .form-label .required {
+            color: #ef4444 !important;
+            margin-left: 0.25rem !important;
+        }
+
+        .input-error {
+            border-color: #ef4444 !important;
+        }
+
+        .error-message {
+            color: #ef4444 !important;
+            font-size: 0.8rem !important;
+            margin-top: 0.375rem !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.25rem !important;
+        }
+
+        .field-hint {
+            color: #64748b !important;
+            font-size: 0.8rem !important;
+            margin-top: 0.375rem !important;
+        }
+
+        .input-with-prefix {
+            display: flex !important;
+            align-items: stretch !important;
+        }
+
+        .input-prefix {
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 1rem !important;
+            background: #f1f5f9 !important;
+            border: 1px solid #e2e8f0 !important;
+            border-right: none !important;
+            border-radius: 0.5rem 0 0 0.5rem !important;
+            color: #64748b !important;
+            font-weight: 500 !important;
+            font-size: 0.95rem !important;
+        }
+
+        .input-with-prefix .form-input,
+        .input-with-prefix input.form-input {
+            border-radius: 0 0.5rem 0.5rem 0 !important;
+            border-left: none !important;
+        }
+
+        .form-actions {
+            display: flex !important;
+            gap: 1rem !important;
+            padding-top: 1.5rem !important;
+            border-top: 1px solid #e2e8f0 !important;
+            margin-top: 0.5rem !important;
+        }
+
+        .btn-primary-large {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.5rem !important;
+            padding: 0.875rem 2rem !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+            border: none !important;
+            border-radius: 0.5rem !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3) !important;
+        }
+
+        .btn-primary-large:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 10px -1px rgba(59, 130, 246, 0.4) !important;
+        }
+
+        .btn-secondary-large {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.5rem !important;
+            padding: 0.875rem 2rem !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            color: #475569 !important;
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 0.5rem !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            text-decoration: none !important;
+        }
+
+        .btn-secondary-large:hover {
+            background: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+
+        @media (max-width: 640px) {
+            .form-actions {
+                flex-direction: column !important;
+            }
+            
+            .btn-primary-large,
+            .btn-secondary-large {
+                width: 100% !important;
+            }
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <!-- Sidebar -->
@@ -252,14 +483,10 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     </button>
                     <div class="header-title">
                         <h1>Edit Inventory Item</h1>
-                        <p>Update item information and details</p>
+                        <p>Update item information in the inventory system</p>
                     </div>
                 </div>
                 <div class="header-right">
-                    <a href="view.php?id=<?php echo $_GET['id']; ?>" class="date-picker-btn" style="margin-right: 10px;">
-                        <i class="fas fa-eye"></i>
-                        View Item
-                    </a>
                     <a href="index.php" class="date-picker-btn">
                         <i class="fas fa-arrow-left"></i>
                         Back to List
@@ -276,8 +503,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     <i class="fas fa-edit"></i>
                 </div>
                 <div class="info-card-content">
-                    <h4>Update Item Information</h4>
-                    <p>Modify the details of this inventory item. Changes will be tracked in the transaction history.</p>
+                    <h4>Editing Item</h4>
+                    <p>Update the item details below. All required fields marked with <span class="required">*</span> must be filled.</p>
                 </div>
             </div>
 
@@ -286,12 +513,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <div class="table-header">
                     <div class="table-title">
                         <h3>Item Information</h3>
-                        <p>Item ID: <strong>#<?php echo str_pad($_GET['id'], 3, '0', STR_PAD_LEFT); ?></strong></p>
+                        <p>Modify the form below to update this inventory item</p>
                     </div>
                 </div>
 
-                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"] . "?id=" . $_GET['id']); ?>" method="post" class="form-container">
-                    <input type="hidden" name="id" value="<?php echo $_GET['id']; ?>">
+                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="form-container">
+                    <input type="hidden" name="item_id" value="<?php echo $item_id; ?>"/>
 
                     <!-- Basic Information Section -->
                     <div class="form-section">
@@ -303,7 +530,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                         <div class="form-grid">
                             <div class="form-group">
                                 <label class="form-label">Item Name <span class="required">*</span></label>
-                                <input type="text" name="item_name" class="form-input <?php echo (!empty($item_name_err)) ? 'input-error' : ''; ?>" value="<?php echo $item_name; ?>" placeholder="Enter item name">
+                                <input type="text" name="item_name" class="form-input <?php echo (!empty($item_name_err)) ? 'input-error' : ''; ?>" value="<?php echo htmlspecialchars($item_name); ?>" placeholder="Enter item name">
                                 <?php if(!empty($item_name_err)): ?>
                                     <span class="error-message"><?php echo $item_name_err; ?></span>
                                 <?php endif; ?>
@@ -363,11 +590,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                         <div class="form-grid">
                             <div class="form-group">
                                 <label class="form-label">Serial Number</label>
-                                <input type="text" name="serial_number" class="form-input" value="<?php echo $serial_number; ?>" placeholder="Enter serial number">
+                                <input type="text" name="serial_number" class="form-input" value="<?php echo htmlspecialchars($serial_number); ?>" placeholder="Enter serial number">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Model Number</label>
-                                <input type="text" name="model_number" class="form-input" value="<?php echo $model_number; ?>" placeholder="Enter model number">
+                                <input type="text" name="model_number" class="form-input" value="<?php echo htmlspecialchars($model_number); ?>" placeholder="Enter model number">
                             </div>
                         </div>
 
@@ -399,13 +626,13 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Location</label>
-                                <input type="text" name="location" class="form-input" value="<?php echo $location; ?>" placeholder="e.g., Office, Storage Room">
+                                <input type="text" name="location" class="form-input" value="<?php echo htmlspecialchars($location); ?>" placeholder="e.g., Office, Storage Room">
                             </div>
                         </div>
 
                         <div class="form-group full-width">
                             <label class="form-label">Notes</label>
-                            <textarea name="notes" class="form-input form-textarea" placeholder="Additional notes or remarks..."><?php echo $notes; ?></textarea>
+                            <textarea name="notes" class="form-input form-textarea" placeholder="Additional notes or remarks..."><?php echo htmlspecialchars($notes); ?></textarea>
                         </div>
                     </div>
 
@@ -415,7 +642,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             <i class="fas fa-save"></i>
                             Update Item
                         </button>
-                        <a href="view.php?id=<?php echo $_GET['id']; ?>" class="btn-secondary-large">
+                        <a href="index.php" class="btn-secondary-large">
                             <i class="fas fa-times"></i>
                             Cancel
                         </a>
