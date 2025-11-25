@@ -16,21 +16,19 @@
     
     <nav class="sidebar-nav">
         <ul class="nav-list">
+            <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>dashboard.php" class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'dashboard.php') ? 'active' : ''; ?>">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
-            <?php if($_SESSION["position"] == "Admin"): ?>
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/staff/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/staff/') !== false) ? 'active' : ''; ?>">
                     <i class="fas fa-users"></i>
                     <span>Staff Management</span>
                 </a>
             </li>
-            <?php endif; ?>
-            <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/clients/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/clients/') !== false) ? 'active' : ''; ?>">
                     <i class="fas fa-building"></i>
@@ -64,6 +62,14 @@
                     </li>
                 </ul>
             </li>
+            <li class="nav-item">
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/inventory/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-boxes"></i>
+                    <span>Inventory Management</span>
+                </a>
+            </li>
+            <?php endif; ?>
+
             <li class="nav-item has-submenu">
                 <a href="#" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>" data-toggle="submenu">
                     <i class="fas fa-plane"></i>
@@ -90,16 +96,9 @@
                             <span>Dashboard</span>
                         </a>
                     </li>
-                    <?php endif; ?>
                 </ul>
             </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/inventory/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-boxes"></i>
-                    <span>Inventory Management</span>
-                </a>
-            </li>
-            <?php endif; ?>
+
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/documents/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/documents/') !== false) ? 'active' : ''; ?>">
                     <i class="fas fa-file-upload"></i>
@@ -111,14 +110,6 @@
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/claims/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/claims/') !== false) ? 'active' : ''; ?>">
                     <i class="fas fa-receipt"></i>
                     <span>Claims Management</span>
-                </a>
-            </li>
-            <?php endif; ?>
-            <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/excel/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/excel/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-file-excel"></i>
-                    <span>Excel Integration</span>
                 </a>
             </li>
             <?php endif; ?>
