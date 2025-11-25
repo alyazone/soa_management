@@ -96,6 +96,7 @@
                             <span>Dashboard</span>
                         </a>
                     </li>
+                    <?php endif; ?>
                 </ul>
             </li>
 
