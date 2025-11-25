@@ -195,6 +195,46 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     
     <!-- Added inline critical styles to override Tailwind's Preflight reset -->
     <style>
+         /* Application Form Specific Styles */
+        .info-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .info-card-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: var(--border-radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            flex-shrink: 0;
+        }
+
+        .info-card-content h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+
+        .info-card-content p {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin: 0;
+            line-height: 1.5;
+        }
+
         /* Form Input Styles - Override Tailwind Preflight */
         .form-input,
         input.form-input,
@@ -458,7 +498,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
         <!-- Dashboard Content -->
         <div class="dashboard-content">
-            <!-- Info Card -->
+            <!-- Application Info Card -->
             <div class="info-card" data-aos="fade-up">
                 <div class="info-card-icon">
                     <i class="fas fa-info-circle"></i>
