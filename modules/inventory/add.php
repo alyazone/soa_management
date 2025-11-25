@@ -192,6 +192,242 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- AOS Animation -->
     <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    
+    <!-- Added inline critical styles to override Tailwind's Preflight reset -->
+    <style>
+        /* Form Input Styles - Override Tailwind Preflight */
+        .form-input,
+        input.form-input,
+        select.form-input,
+        textarea.form-input,
+        .form-container input[type="text"],
+        .form-container input[type="date"],
+        .form-container input[type="number"],
+        .form-container input[type="email"],
+        .form-container input[type="password"],
+        .form-container input[type="tel"],
+        .form-container select,
+        .form-container textarea {
+            display: block !important;
+            width: 100% !important;
+            padding: 0.75rem 1rem !important;
+            font-size: 0.95rem !important;
+            font-weight: 400 !important;
+            line-height: 1.5 !important;
+            color: #1e293b !important;
+            background-color: #ffffff !important;
+            background-clip: padding-box !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 0.5rem !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+        }
+
+        .form-input:focus,
+        input.form-input:focus,
+        select.form-input:focus,
+        textarea.form-input:focus,
+        .form-container input:focus,
+        .form-container select:focus,
+        .form-container textarea:focus {
+            border-color: #3b82f6 !important;
+            outline: 0 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+        }
+
+        .form-container select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+            background-position: right 0.75rem center !important;
+            background-repeat: no-repeat !important;
+            background-size: 1.25rem !important;
+            padding-right: 2.5rem !important;
+        }
+
+        .form-container textarea {
+            min-height: 120px !important;
+            resize: vertical !important;
+        }
+
+        .form-container {
+            padding: 1.5rem !important;
+        }
+
+        .form-section {
+            background: #f8fafc !important;
+            border-radius: 0.75rem !important;
+            padding: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+
+        .form-section-title {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+            color: #1e293b !important;
+            margin-bottom: 1.25rem !important;
+            padding-bottom: 0.75rem !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+
+        .form-section-title i {
+            color: #3b82f6 !important;
+        }
+
+        .form-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 1.25rem !important;
+            margin-bottom: 1.25rem !important;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        .form-group {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2 !important;
+        }
+
+        @media (max-width: 768px) {
+            .form-group.full-width {
+                grid-column: span 1 !important;
+            }
+        }
+
+        .form-label {
+            display: block !important;
+            font-weight: 500 !important;
+            font-size: 0.875rem !important;
+            color: #475569 !important;
+            margin-bottom: 0.5rem !important;
+        }
+
+        .form-label .required {
+            color: #ef4444 !important;
+            margin-left: 0.25rem !important;
+        }
+
+        .input-error {
+            border-color: #ef4444 !important;
+        }
+
+        .error-message {
+            color: #ef4444 !important;
+            font-size: 0.8rem !important;
+            margin-top: 0.375rem !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.25rem !important;
+        }
+
+        .field-hint {
+            color: #64748b !important;
+            font-size: 0.8rem !important;
+            margin-top: 0.375rem !important;
+        }
+
+        .input-with-prefix {
+            display: flex !important;
+            align-items: stretch !important;
+        }
+
+        .input-prefix {
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 1rem !important;
+            background: #f1f5f9 !important;
+            border: 1px solid #e2e8f0 !important;
+            border-right: none !important;
+            border-radius: 0.5rem 0 0 0.5rem !important;
+            color: #64748b !important;
+            font-weight: 500 !important;
+            font-size: 0.95rem !important;
+        }
+
+        .input-with-prefix .form-input,
+        .input-with-prefix input.form-input {
+            border-radius: 0 0.5rem 0.5rem 0 !important;
+            border-left: none !important;
+        }
+
+        .form-actions {
+            display: flex !important;
+            gap: 1rem !important;
+            padding-top: 1.5rem !important;
+            border-top: 1px solid #e2e8f0 !important;
+            margin-top: 0.5rem !important;
+        }
+
+        .btn-primary-large {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.5rem !important;
+            padding: 0.875rem 2rem !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+            border: none !important;
+            border-radius: 0.5rem !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3) !important;
+        }
+
+        .btn-primary-large:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 10px -1px rgba(59, 130, 246, 0.4) !important;
+        }
+
+        .btn-secondary-large {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.5rem !important;
+            padding: 0.875rem 2rem !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            color: #475569 !important;
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 0.5rem !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            text-decoration: none !important;
+        }
+
+        .btn-secondary-large:hover {
+            background: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+
+        @media (max-width: 640px) {
+            .form-actions {
+                flex-direction: column !important;
+            }
+            
+            .btn-primary-large,
+            .btn-secondary-large {
+                width: 100% !important;
+            }
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <!-- Sidebar -->
