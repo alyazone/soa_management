@@ -553,7 +553,6 @@ input.with-prefix {
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    opacity: 0.1;
   }
   
   .stat-card-primary .stat-icon {
