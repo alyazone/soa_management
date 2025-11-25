@@ -1092,3 +1092,154 @@
       flex-direction: column;
     }
   }
+
+/* Enhanced Form Styling - Higher Specificity to Override Tailwind */
+form .form-container,
+.table-card form.form-container {
+  padding: 1.5rem;
+}
+
+form .form-section {
+  margin-bottom: 2rem;
+}
+
+form .form-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+form .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+form .form-label {
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: var(--gray-700) !important;
+  margin-bottom: 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+}
+
+form .form-input,
+form .form-textarea,
+form input.form-input,
+form select.form-input,
+form textarea.form-textarea {
+  width: 100% !important;
+  padding: 0.75rem 1rem !important;
+  border: 1px solid var(--gray-300) !important;
+  border-radius: var(--border-radius-sm) !important;
+  font-size: 0.875rem !important;
+  color: var(--gray-900) !important;
+  background: white !important;
+  transition: var(--transition) !important;
+  font-family: inherit !important;
+  line-height: 1.5 !important;
+}
+
+form .form-input:focus,
+form .form-textarea:focus,
+form input.form-input:focus,
+form select.form-input:focus,
+form textarea.form-textarea:focus {
+  outline: none !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+form select.form-input {
+  cursor: pointer !important;
+  padding-right: 2.5rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E") !important;
+  background-position: right 0.5rem center !important;
+  background-repeat: no-repeat !important;
+  background-size: 1.5em 1.5em !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+form .form-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  padding-top: 1.5rem !important;
+  border-top: 1px solid var(--gray-200) !important;
+  margin-top: 2rem !important;
+}
+
+form .btn-primary-large,
+form .btn-secondary-large,
+form button.btn-primary-large,
+form button.btn-secondary-large,
+form a.btn-primary-large,
+form a.btn-secondary-large {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.875rem 2rem !important;
+  border-radius: var(--border-radius-sm) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: var(--transition) !important;
+  border: 2px solid !important;
+  text-decoration: none !important;
+}
+
+form .btn-primary-large,
+form button.btn-primary-large,
+form a.btn-primary-large {
+  background: var(--primary-color) !important;
+  color: white !important;
+  border-color: var(--primary-color) !important;
+}
+
+form .btn-primary-large:hover,
+form button.btn-primary-large:hover,
+form a.btn-primary-large:hover {
+  background: var(--primary-dark) !important;
+  border-color: var(--primary-dark) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg) !important;
+}
+
+form .btn-secondary-large,
+form button.btn-secondary-large,
+form a.btn-secondary-large {
+  background: white !important;
+  color: var(--gray-700) !important;
+  border-color: var(--gray-300) !important;
+}
+
+form .btn-secondary-large:hover,
+form button.btn-secondary-large:hover,
+form a.btn-secondary-large:hover {
+  background: var(--gray-50) !important;
+  border-color: var(--gray-400) !important;
+  color: var(--gray-900) !important;
+}
+
+form .input-with-prefix {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+form .input-prefix {
+  position: absolute !important;
+  left: 1rem !important;
+  color: var(--gray-600) !important;
+  font-weight: 500 !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+}
+
+form .form-input.with-prefix {
+  padding-left: 3rem !important;
+}
