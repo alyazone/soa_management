@@ -62,12 +62,6 @@
                     </li>
                 </ul>
             </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/inventory/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-boxes"></i>
-                    <span>Inventory Management</span>
-                </a>
-            </li>
             <?php endif; ?>
 
             <li class="nav-item has-submenu">
@@ -101,16 +95,21 @@
             </li>
             <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
             <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/documents/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/documents/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-file-upload"></i>
-                    <span>Document Upload</span>
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/inventory/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-boxes"></i>
+                    <span>Inventory Management</span>
                 </a>
             </li>
-            
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/claims/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/claims/') !== false) ? 'active' : ''; ?>">
                     <i class="fas fa-receipt"></i>
                     <span>Claims Management</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/documents/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/documents/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-file-upload"></i>
+                    <span>Document Upload</span>
                 </a>
             </li>
             <?php endif; ?>
