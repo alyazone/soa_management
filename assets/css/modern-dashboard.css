@@ -1,4 +1,5 @@
 /* Modern Dashboard CSS */
+
 :root {
     --primary-color: #3b82f6;
     --primary-dark: #2563eb;
@@ -1092,154 +1093,318 @@
       flex-direction: column;
     }
   }
+  /* enhanced styles for forms */
+  form.form-container,
+  .table-card form.form-container {
+    padding: 1.5rem !important;
+  }
 
-/* Enhanced Form Styling - Higher Specificity to Override Tailwind */
-form .form-container,
-.table-card form.form-container {
-  padding: 1.5rem;
-}
+  form.form-container .form-section,
+  form .form-section {
+    margin-bottom: 2rem !important;
+  }
 
-form .form-section {
-  margin-bottom: 2rem;
-}
+  form.form-container .form-section-title,
+  form .form-section-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    font-size: 1.125rem !important;
+    font-weight: 600 !important;
+    color: var(--gray-900) !important;
+    margin-bottom: 1.5rem !important;
+    padding-bottom: 0.75rem !important;
+    border-bottom: 2px solid var(--gray-200) !important;
+  }
 
-form .form-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, 1fr) !important;
-  gap: 1.5rem !important;
-  margin-bottom: 1.5rem !important;
-}
+  form.form-container .form-section-title i,
+  form .form-section-title i {
+    color: var(--primary-color) !important;
+    font-size: 1.25rem !important;
+  }
 
-form .form-group {
-  display: flex !important;
-  flex-direction: column !important;
-}
+  form.form-container .form-grid,
+  form .form-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+  }
 
-form .form-label {
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
-  color: var(--gray-700) !important;
-  margin-bottom: 0.5rem !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.25rem !important;
-}
+  form.form-container .form-group,
+  form .form-group {
+    display: flex !important;
+    flex-direction: column !important;
+  }
 
-form .form-input,
-form .form-textarea,
-form input.form-input,
-form select.form-input,
-form textarea.form-textarea {
-  width: 100% !important;
-  padding: 0.75rem 1rem !important;
-  border: 1px solid var(--gray-300) !important;
-  border-radius: var(--border-radius-sm) !important;
-  font-size: 0.875rem !important;
-  color: var(--gray-900) !important;
-  background: white !important;
-  transition: var(--transition) !important;
-  font-family: inherit !important;
-  line-height: 1.5 !important;
-}
+  form.form-container .form-group.full-width,
+  form .form-group.full-width {
+    grid-column: 1 / -1 !important;
+  }
 
-form .form-input:focus,
-form .form-textarea:focus,
-form input.form-input:focus,
-form select.form-input:focus,
-form textarea.form-textarea:focus {
-  outline: none !important;
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-}
+  form.form-container .form-label,
+  form .form-label,
+  form.form-container label.form-label,
+  form label.form-label,
+  form.form-container label,
+  form label {
 
-form select.form-input {
-  cursor: pointer !important;
-  padding-right: 2.5rem !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E") !important;
-  background-position: right 0.5rem center !important;
-  background-repeat: no-repeat !important;
-  background-size: 1.5em 1.5em !important;
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  appearance: none !important;
-}
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    color: var(--gray-700) !important;
+    margin-bottom: 0.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
 
-form .form-actions {
-  display: flex !important;
-  align-items: center !important;
-  gap: 1rem !important;
-  padding-top: 1.5rem !important;
-  border-top: 1px solid var(--gray-200) !important;
-  margin-top: 2rem !important;
-}
+  }
 
-form .btn-primary-large,
-form .btn-secondary-large,
-form button.btn-primary-large,
-form button.btn-secondary-large,
-form a.btn-primary-large,
-form a.btn-secondary-large {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-  padding: 0.875rem 2rem !important;
-  border-radius: var(--border-radius-sm) !important;
-  font-size: 0.875rem !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-  transition: var(--transition) !important;
-  border: 2px solid !important;
-  text-decoration: none !important;
-}
+  form.form-container .required,
+  form .required {
+    color: var(--danger-color) !important;
+    font-weight: 600 !important;
+  }
 
-form .btn-primary-large,
-form button.btn-primary-large,
-form a.btn-primary-large {
-  background: var(--primary-color) !important;
-  color: white !important;
-  border-color: var(--primary-color) !important;
-}
+  /* All form inputs - comprehensive selectors */
 
-form .btn-primary-large:hover,
-form button.btn-primary-large:hover,
-form a.btn-primary-large:hover {
-  background: var(--primary-dark) !important;
-  border-color: var(--primary-dark) !important;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg) !important;
-}
+  form.form-container .form-input,
+  form.form-container .form-textarea,
+  form.form-container input.form-input,
+  form.form-container select.form-input,
+  form.form-container textarea.form-textarea,
+  form.form-container input[type="text"],
+  form.form-container input[type="email"],
+  form.form-container input[type="number"],
+  form.form-container input[type="date"],
+  form.form-container input[type="password"],
+  form.form-container select,
+  form.form-container textarea,
+  form .form-input,
+  form .form-textarea,
+  form input.form-input,
+  form select.form-input,
+  form textarea.form-textarea,
+  form input[type="text"],
+  form input[type="email"],
+  form input[type="number"],
+  form input[type="date"],
+  form input[type="password"],
+  form select,
+  form textarea {
 
-form .btn-secondary-large,
-form button.btn-secondary-large,
-form a.btn-secondary-large {
-  background: white !important;
-  color: var(--gray-700) !important;
-  border-color: var(--gray-300) !important;
-}
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+    border: 1px solid var(--gray-300) !important;
+    border-radius: var(--border-radius-sm) !important;
+    font-size: 0.875rem !important;
+    color: var(--gray-900) !important;
+    background-color: white !important;
+    background: white !important;
+    transition: var(--transition) !important;
+    font-family: inherit !important;
+    line-height: 1.5 !important;
+  }
 
-form .btn-secondary-large:hover,
-form button.btn-secondary-large:hover,
-form a.btn-secondary-large:hover {
-  background: var(--gray-50) !important;
-  border-color: var(--gray-400) !important;
-  color: var(--gray-900) !important;
-}
+  form.form-container .form-input:focus,
+  form.form-container .form-textarea:focus,
+  form.form-container input:focus,
+  form.form-container select:focus,
+  form.form-container textarea:focus,
+  form .form-input:focus,
+  form .form-textarea:focus,
+  form input:focus,
+  form select:focus,
+  form textarea:focus {
 
-form .input-with-prefix {
-  position: relative !important;
-  display: flex !important;
-  align-items: center !important;
-}
+    outline: none !important;
+    outline-offset: 0 !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    ring: 0 !important;
 
-form .input-prefix {
-  position: absolute !important;
-  left: 1rem !important;
-  color: var(--gray-600) !important;
-  font-weight: 500 !important;
-  pointer-events: none !important;
-  z-index: 10 !important;
-}
+  }
 
-form .form-input.with-prefix {
-  padding-left: 3rem !important;
-}
+  form.form-container select.form-input,
+  form.form-container select,
+  form select.form-input,
+  form select {
+    cursor: pointer !important;
+    padding-right: 2.5rem !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E") !important;
+    background-position: right 0.5rem center !important;
+    background-repeat: no-repeat !important;
+    background-size: 1.5em 1.5em !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+  }
+
+  form.form-container .form-textarea,
+  form.form-container textarea,
+  form .form-textarea,
+  form textarea {
+    min-height: 120px !important;
+    resize: vertical !important;
+  }
+
+  form.form-container .input-error,
+  form .input-error {
+    border-color: var(--danger-color) !important;
+    background-color: rgba(239, 68, 68, 0.05) !important;
+  }
+
+  form.form-container .error-message,
+  form .error-message {
+    display: block !important;
+    color: var(--danger-color) !important;
+    font-size: 0.875rem !important;
+    margin-top: 0.5rem !important;
+    font-weight: 500 !important;
+  }
+
+  form.form-container .form-actions,
+  form .form-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    padding-top: 1.5rem !important;
+    border-top: 1px solid var(--gray-200) !important;
+    margin-top: 2rem !important;
+  }
+
+  /* All form buttons */
+
+  form.form-container .btn-primary-large,
+  form.form-container .btn-secondary-large,
+  form.form-container button.btn-primary-large,
+  form.form-container button.btn-secondary-large,
+  form.form-container button[type="submit"],
+  form.form-container a.btn-primary-large,
+  form.form-container a.btn-secondary-large,
+  form .btn-primary-large,
+  form .btn-secondary-large,
+  form button.btn-primary-large,
+  form button.btn-secondary-large,
+  form button[type="submit"],
+  form a.btn-primary-large,
+  form a.btn-secondary-large {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    padding: 0.875rem 2rem !important;
+    border-radius: var(--border-radius-sm) !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: var(--transition) !important;
+    border-width: 2px !important;
+    border-style: solid !important;
+    text-decoration: none !important;
+  }
+
+  form.form-container .btn-primary-large,
+  form.form-container button.btn-primary-large,
+  form.form-container button[type="submit"],
+  form.form-container a.btn-primary-large,
+  form .btn-primary-large,
+  form button.btn-primary-large,
+  form button[type="submit"],
+  form a.btn-primary-large {
+    background-color: var(--primary-color) !important;
+    background: var(--primary-color) !important;
+    color: white !important;
+    border-color: var(--primary-color) !important;
+  }
+
+  form.form-container .btn-primary-large:hover,
+  form.form-container button.btn-primary-large:hover,
+  form.form-container button[type="submit"]:hover,
+  form.form-container a.btn-primary-large:hover,
+  form .btn-primary-large:hover,
+  form button.btn-primary-large:hover,
+  form button[type="submit"]:hover,
+  form a.btn-primary-large:hover {
+    background-color: var(--primary-dark) !important;
+    background: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: var(--shadow-lg) !important;
+  }
+
+  form.form-container .btn-secondary-large,
+  form.form-container button.btn-secondary-large,
+  form.form-container a.btn-secondary-large,
+  form .btn-secondary-large,
+  form button.btn-secondary-large,
+  form a.btn-secondary-large {
+    background-color: white !important;
+    background: white !important;
+    color: var(--gray-700) !important;
+    border-color: var(--gray-300) !important;
+  }
+
+  form.form-container .btn-secondary-large:hover,
+  form.form-container button.btn-secondary-large:hover,
+  form.form-container a.btn-secondary-large:hover,
+  form .btn-secondary-large:hover,
+  form button.btn-secondary-large:hover,
+  form a.btn-secondary-large:hover {
+    background-color: var(--gray-50) !important;
+    background: var(--gray-50) !important;
+    border-color: var(--gray-400) !important;
+    color: var(--gray-900) !important;
+  }
+
+  form.form-container .input-with-prefix,
+  form .input-with-prefix {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  form.form-container .input-prefix,
+  form .input-prefix {
+    position: absolute !important;
+    left: 1rem !important;
+    color: var(--gray-600) !important;
+    font-weight: 500 !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+  }
+
+  form.form-container .form-input.with-prefix,
+  form .form-input.with-prefix {
+    padding-left: 3rem !important;
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    form.form-container .form-grid,
+    form .form-grid {
+      grid-template-columns: 1fr !important;
+      gap: 1rem !important;
+    }
+
+    form.form-container .form-actions,
+    form .form-actions {
+      flex-direction: column !important;
+      align-items: stretch !important;
+    }
+  
+    form.form-container .btn-primary-large,
+    form.form-container .btn-secondary-large,
+    form .btn-primary-large,
+    form .btn-secondary-large {
+      width: 100% !important;
+      justify-content: center !important;
+    }
+  }
+
+
+
+
+
+
+
+
