@@ -393,45 +393,5 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             initializeDashboard();
         });
     </script>
-
-    <style>
-        /* Form-specific styles */
-        .input-with-prefix {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .input-prefix {
-            position: absolute;
-            left: 1rem;
-            color: var(--gray-600);
-            font-weight: 500;
-            pointer-events: none;
-        }
-
-        .form-input.with-prefix {
-            padding-left: 3rem;
-        }
-
-        .input-error {
-            border-color: var(--danger-color) !important;
-            background-color: rgba(239, 68, 68, 0.05);
-        }
-
-        .error-message {
-            display: block;
-            color: var(--danger-color);
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
-        }
-
-        .field-hint {
-            display: block;
-            color: var(--gray-500);
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
-        }
-    </style>
 </body>
 </html>
