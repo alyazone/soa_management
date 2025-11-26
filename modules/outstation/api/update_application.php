@@ -80,7 +80,7 @@ try {
     // Calculate nights and claimability
     $interval = $departure->diff($return);
     $total_nights = $interval->days;
-    $is_claimable = $total_nights >= 1 ? 1 : 0;
+    $is_claimable = $total_nights >= 2 ? 1 : 0;
 
     // Begin transaction
     $pdo->beginTransaction();
