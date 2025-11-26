@@ -292,7 +292,7 @@ try {
                             <i class="fas fa-exclamation-triangle"></i>
                             <div>
                                 <strong>Not Eligible for Claim</strong>
-                                <p>Trips with less than 1 night stay are not eligible for outstation leave claims. This application will be recorded for tracking purposes only.</p>
+                                <p>Trips with less than 2 nights stay are not eligible for outstation leave claims. This application will be recorded for tracking purposes only.</p>
                             </div>
                         </div>
                     </div>
@@ -373,7 +373,7 @@ try {
 
                 // Update hidden fields
                 document.getElementById('total_nights').value = diffDays;
-                document.getElementById('is_claimable').value = diffDays >= 1 ? '1' : '0';
+                document.getElementById('is_claimable').value = diffDays >= 2 ? '1' : '0';
 
                 // Update display
                 showCalculation(departureDate, returnDate, diffDays);
@@ -402,7 +402,7 @@ try {
                 document.getElementById('display_nights').textContent = nights + ' night' + (nights !== 1 ? 's' : '');
 
                 // Update claimable status
-                const isClaimable = nights >= 1;
+                const isClaimable = nights >= 2;
                 const claimableDisplay = document.getElementById('display_claimable');
 
                 if (isClaimable) {

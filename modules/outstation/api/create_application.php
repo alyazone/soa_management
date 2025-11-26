@@ -63,10 +63,10 @@ try {
     // Recalculate nights to ensure accuracy
     $interval = $departure->diff($return);
     $calculated_nights = $interval->days;
-    
+
     if ($calculated_nights != $total_nights) {
         $total_nights = $calculated_nights;
-        $is_claimable = $calculated_nights >= 1 ? 1 : 0;
+        $is_claimable = $calculated_nights >= 2 ? 1 : 0;
     }
     
     // Check if application number already exists

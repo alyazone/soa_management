@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS `outstation_settings` (
 
 -- Insert default settings
 INSERT INTO `outstation_settings` (`setting_key`, `setting_value`, `description`) VALUES
-('minimum_nights_claimable', '1', 'Minimum number of nights required to qualify for outstation leave claim'),
+('minimum_nights_claimable', '2', 'Minimum number of nights required to qualify for outstation leave claim'),
 ('default_allowance_per_day', '100.00', 'Default daily allowance amount in RM'),
 ('require_manager_approval', '1', 'Whether applications require manager approval (1=yes, 0=no)'),
 ('auto_approve_days', '0', 'Number of days after which pending applications are auto-approved (0=disabled)');

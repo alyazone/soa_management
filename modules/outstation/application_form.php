@@ -80,7 +80,7 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
                 </div>
                 <div class="info-card-content">
                     <h4>Application Guidelines</h4>
-                    <p>Please complete this form before proceeding with your outstation trip. If your stay is for <strong>one night or more</strong>, you will be eligible to claim outstation leave allowance upon return.</p>
+                    <p>Please complete this form before proceeding with your outstation trip. If your stay is for <strong>two nights or more</strong>, you will be eligible to claim outstation leave allowance upon return.</p>
                 </div>
             </div>
 
@@ -246,7 +246,7 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
                             <i class="fas fa-exclamation-triangle"></i>
                             <div>
                                 <strong>Not Eligible for Claim</strong>
-                                <p>Trips with less than 1 night stay are not eligible for outstation leave claims. This application will be recorded for tracking purposes only.</p>
+                                <p>Trips with less than 2 nights stay are not eligible for outstation leave claims. This application will be recorded for tracking purposes only.</p>
                             </div>
                         </div>
                     </div>
@@ -326,7 +326,7 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
 
                 // Update hidden fields
                 document.getElementById('total_nights').value = diffDays;
-                document.getElementById('is_claimable').value = diffDays >= 1 ? '1' : '0';
+                document.getElementById('is_claimable').value = diffDays >= 2 ? '1' : '0';
 
                 // Update display
                 showCalculation(departureDate, returnDate, diffDays);
@@ -355,7 +355,7 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
                 document.getElementById('display_nights').textContent = nights + ' night' + (nights !== 1 ? 's' : '');
 
                 // Update claimable status
-                const isClaimable = nights >= 1;
+                const isClaimable = nights >= 2;
                 const claimableDisplay = document.getElementById('display_claimable');
 
                 if (isClaimable) {

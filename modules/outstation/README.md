@@ -1,7 +1,7 @@
 # Outstation Leave Tracking Module
 
 ## Overview
-This module tracks outstation leave applications for employees. It automatically calculates eligibility for leave claims based on the duration of the trip (stays of 1 night or more qualify).
+This module tracks outstation leave applications for employees. It automatically calculates eligibility for leave claims based on the duration of the trip (stays of 2 nights or more qualify).
 
 ## Features
 
@@ -48,7 +48,7 @@ Main table storing all outstation leave applications.
 - `destination`: Where the staff member is traveling
 - `departure_date` / `return_date`: Travel dates
 - `total_nights`: Calculated nights stayed
-- `is_claimable`: Boolean (1 if nights >= 1)
+- `is_claimable`: Boolean (1 if nights >= 2)
 - `status`: Pending/Approved/Rejected/Cancelled/Completed
 - `approved_by`: Staff ID of approver
 - `rejection_reason`: Reason for rejection (if applicable)
@@ -62,7 +62,7 @@ Configurable settings like minimum nights, allowance amounts, etc.
 ## Business Logic
 
 ### Claimability Rules
-1. **Minimum Nights**: Stay must be 1 night or more
+1. **Minimum Nights**: Stay must be 2 nights or more
 2. **Calculation**: `return_date - departure_date = total_nights`
 3. **Auto-calculation**: System automatically determines eligibility
 4. **Approval Required**: Must be approved before claiming
