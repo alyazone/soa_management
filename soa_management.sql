@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 18, 2025 at 08:38 AM
+-- Generation Time: Nov 26, 2025 at 03:03 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -373,6 +373,7 @@ CREATE TABLE `outstation_applications` (
   `application_number` varchar(50) NOT NULL,
   `staff_id` int(11) NOT NULL,
   `purpose` varchar(255) NOT NULL,
+  `purpose_details` text NOT NULL,
   `destination` varchar(255) NOT NULL,
   `departure_date` date NOT NULL,
   `departure_time` time DEFAULT NULL,
@@ -391,6 +392,13 @@ CREATE TABLE `outstation_applications` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `outstation_applications`
+--
+
+INSERT INTO `outstation_applications` (`application_id`, `application_number`, `staff_id`, `purpose`, `purpose_details`, `destination`, `departure_date`, `departure_time`, `return_date`, `return_time`, `total_nights`, `is_claimable`, `transportation_mode`, `estimated_cost`, `accommodation_details`, `remarks`, `status`, `approved_by`, `approved_at`, `rejection_reason`, `created_at`, `updated_at`) VALUES
+(1, 'OSL-2025-2035', 9, 'Maintenance', 'PM TESTING', 'Melaka', '2025-11-27', '09:00:00', '2025-11-28', '17:00:00', 1, 1, 'Company Vehicle', 0.00, 'HOTEL ABC TESTING', 'TESTING REMARKS', 'Pending', NULL, NULL, NULL, '2025-11-26 01:28:08', '2025-11-26 01:42:58');
 
 -- --------------------------------------------------------
 
@@ -434,10 +442,10 @@ CREATE TABLE `outstation_settings` (
 --
 
 INSERT INTO `outstation_settings` (`setting_id`, `setting_key`, `setting_value`, `description`, `updated_by`, `updated_at`) VALUES
-(1, 'minimum_nights_claimable', '1', 'Minimum number of nights required to qualify for outstation leave claim', NULL, '2025-11-18 07:38:04'),
-(2, 'default_allowance_per_day', '100.00', 'Default daily allowance amount in RM', NULL, '2025-11-18 07:38:04'),
-(3, 'require_manager_approval', '1', 'Whether applications require manager approval (1=yes, 0=no)', NULL, '2025-11-18 07:38:04'),
-(4, 'auto_approve_days', '0', 'Number of days after which pending applications are auto-approved (0=disabled)', NULL, '2025-11-18 07:38:04');
+(1, 'minimum_nights_claimable', '1', 'Minimum number of nights required to qualify for outstation leave claim', NULL, '2025-11-26 01:23:33'),
+(2, 'default_allowance_per_day', '100.00', 'Default daily allowance amount in RM', NULL, '2025-11-26 01:23:33'),
+(3, 'require_manager_approval', '1', 'Whether applications require manager approval (1=yes, 0=no)', NULL, '2025-11-26 01:23:33'),
+(4, 'auto_approve_days', '0', 'Number of days after which pending applications are auto-approved (0=disabled)', NULL, '2025-11-26 01:23:33');
 
 -- --------------------------------------------------------
 
@@ -497,10 +505,10 @@ CREATE TABLE `staff` (
 
 INSERT INTO `staff` (`staff_id`, `username`, `password`, `full_name`, `email`, `department`, `position`, `created_at`, `updated_at`) VALUES
 (3, 'admin', '$2y$10$7LscS9VBVelEV68hRc2B/.uRgvEAYIfKlwf/lOE9j7.xz3dk2n6n6', 'System Administrator', 'admin@example.com', 'IT', 'Admin', '2025-04-14 07:57:32', '2025-04-14 07:57:32'),
-(6, 'manager', '$2y$10$CPy8aY0qF45YvZI0rhaDI.PqcdQQb2YvATYVUIwcyaBfAjhJs2XVW', 'manager', 'mngr@gmail.com', 'HR Department', 'Manager', '2025-04-14 08:05:29', '2025-04-14 08:05:29'),
+(6, 'manager', '$2y$10$DhnOq4mTAYIKZAnT8Lil3OwKIxlH5i/5F6bhM2q9/aX4jASngwko6', 'manager', 'mngr@gmail.com', 'HR Department', 'Manager', '2025-04-14 08:05:29', '2025-11-18 07:48:25'),
 (7, 'staff', '$2y$10$KAW4a43XxboYNev.SFSJh.L3Cp9HUVK1wRV47KWVUod4B3o0hBl9C', 'KYROL staff', 'staff@kyrolsecuritylabs.com', 'IT Department', 'Staff', '2025-04-17 04:13:09', '2025-04-17 04:13:09'),
 (8, 'admin123', '$2y$10$LsYlKjjjYjAHPuQqgjBVI.HLvi2BYcU0B5R1w0EYWXLg6kLlKqf/i', 'admin', 'admin@gmail.com', 'HR Department', 'Admin', '2025-04-21 01:42:32', '2025-07-23 05:01:01'),
-(9, 'staff-alya', '$2y$10$zHvqVNN5aI9hrDJHdDiAYOwKVUkMJ7j1piBI8qiY3mWdMOCk1o.zK', 'Alya Maisarah', 'alya@kyrolsecuritylabs.com', 'IT Department', 'Staff', '2025-05-07 04:22:55', '2025-05-07 04:22:55'),
+(9, 'staff-alya', '$2y$10$JOcpSkae8snShdrtB9cqi.k7DG1yQy4JWm.v3A6aS1k9C90xpyLUu', 'Alya Maisarah', 'alya@kyrolsecuritylabs.com', 'IT Department', 'Staff', '2025-05-07 04:22:55', '2025-11-18 08:14:46'),
 (10, 'boss', '$2y$10$KioDQ5ZmtzkfYAH5g0yAFurVjXIhua3vMJ/V1ZBEYfdlurDYxWwsm', 'En. Khairol', 'khairol@kyrolsecuritylabs.com', 'Management', 'Manager', '2025-05-08 03:07:12', '2025-05-08 03:07:12');
 
 -- --------------------------------------------------------
@@ -780,7 +788,7 @@ ALTER TABLE `mileage_rates`
 -- AUTO_INCREMENT for table `outstation_applications`
 --
 ALTER TABLE `outstation_applications`
-  MODIFY `application_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `application_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `outstation_claims`
