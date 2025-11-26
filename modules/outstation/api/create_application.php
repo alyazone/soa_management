@@ -46,7 +46,7 @@ try {
     $remarks = $_POST['remarks'] ?? null;
     
     // Validate staff_id matches session
-    if ($staff_id !== $_SESSION['staff_id']) {
+    if ($staff_id != intval($_SESSION['staff_id'])) {
         echo json_encode(['success' => false, 'message' => 'Invalid staff ID']);
         exit();
     }
