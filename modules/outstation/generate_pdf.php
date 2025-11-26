@@ -131,6 +131,14 @@ class PDF extends FPDF {
         $this->Cell(30, 7, 'Destination:', 1, 0, 'L');
         $this->Cell(65, 7, $application['destination'], 1, 1, 'L');
 
+        // Purpose Details
+        $this->Cell(30, 7, 'Purpose Details:', 1, 0, 'L');
+        $x = $this->GetX();
+        $y = $this->GetY();
+        $this->MultiCell(160, 5, $application['purpose_details'] ?? 'N/A', 1, 'L');
+        $this->SetXY($x, $y + 7);
+        $this->Ln(0);
+
         // Departure Date/Time and Return Date/Time
         $departureTime = $application['departure_time'] ? date('g:i A', strtotime($application['departure_time'])) : '-';
         $returnTime = $application['return_time'] ? date('g:i A', strtotime($application['return_time'])) : '-';

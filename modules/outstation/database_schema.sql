@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS `outstation_applications` (
   `application_number` VARCHAR(50) NOT NULL UNIQUE,
   `staff_id` INT(11) NOT NULL,
   `purpose` VARCHAR(255) NOT NULL,
+  `purpose_details` TEXT NOT NULL,
   `destination` VARCHAR(255) NOT NULL,
   `departure_date` DATE NOT NULL,
   `departure_time` TIME DEFAULT NULL,
