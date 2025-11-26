@@ -1,5 +1,6 @@
 -- Outstation Leave Tracking Module Database Schema
 -- Created: 2025-11-18
+-- Last Modified: 2025-11-26
 
 -- Create outstation_applications table
 CREATE TABLE IF NOT EXISTS `outstation_applications` (
