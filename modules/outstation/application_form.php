@@ -144,6 +144,11 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
                             </div>
                         </div>
 
+                        <div class="form-group full-width">
+                            <label class="form-label">Purpose Details / Activities <span class="required">*</span></label>
+                            <textarea name="purpose_details" id="purpose_details" class="form-input form-textarea" placeholder="Please explain the purpose of your trip and describe the activities you will be doing..." required></textarea>
+                        </div>
+
                         <div class="form-grid">
                             <div class="form-group">
                                 <label class="form-label">Departure Date <span class="required">*</span></label>

@@ -212,6 +212,12 @@ try {
                                     <span class="purpose-badge"><?php echo htmlspecialchars($application['purpose']); ?></span>
                                 </span>
                             </div>
+                            <div class="info-row full-width-row">
+                                <span class="info-label">Purpose Details / Activities:</span>
+                                <span class="info-value description-text">
+                                    <?php echo nl2br(htmlspecialchars($application['purpose_details'] ?? 'N/A')); ?>
+                                </span>
+                            </div>
                             <div class="info-row">
                                 <span class="info-label">Destination:</span>
                                 <span class="info-value">
@@ -596,6 +602,11 @@ try {
             border-bottom: none;
         }
 
+        .info-row.full-width-row {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
         .info-label {
             font-weight: 500;
             color: var(--gray-600);
@@ -606,6 +617,12 @@ try {
             color: var(--gray-900);
             flex: 1;
             text-align: right;
+        }
+
+        .info-value.description-text {
+            text-align: left;
+            line-height: 1.6;
+            white-space: pre-wrap;
         }
 
         .purpose-badge {

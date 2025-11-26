@@ -19,19 +19,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 try {
     // Validate required fields
-    $required_fields = ['application_number', 'staff_id', 'purpose', 'destination', 'departure_date', 'return_date', 'transportation_mode'];
-    
+    $required_fields = ['application_number', 'staff_id', 'purpose', 'purpose_details', 'destination', 'departure_date', 'return_date', 'transportation_mode'];
+
     foreach ($required_fields as $field) {
         if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
             echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
             exit();
         }
     }
-    
+
     // Get form data
     $application_number = trim($_POST['application_number']);
     $staff_id = intval($_POST['staff_id']);
     $purpose = trim($_POST['purpose']);
+    $purpose_details = trim($_POST['purpose_details']);
     $destination = trim($_POST['destination']);
     $departure_date = $_POST['departure_date'];
     $departure_time = $_POST['departure_time'] ?? null;
@@ -85,6 +86,7 @@ try {
         application_number,
         staff_id,
         purpose,
+        purpose_details,
         destination,
         departure_date,
         departure_time,
@@ -97,13 +99,14 @@ try {
         accommodation_details,
         remarks,
         status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
-    
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
+
     $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([
         $application_number,
         $staff_id,
         $purpose,
+        $purpose_details,
         $destination,
         $departure_date,
         $departure_time,
