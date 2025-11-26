@@ -306,7 +306,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             width: 100%;
             max-width: 180px;
             transition: all 0.3s;
-            margin-top: 20px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
@@ -528,12 +527,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                         <span class="invalid-feedback"><?php echo $password_err; ?></span>
                     <?php endif; ?>
                     
-                    <button type="submit" class="login-btn">
-                        LOGIN
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                        <button type="submit" class="login-btn">
+                            LOGIN
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
 
-                    <div style="margin-top: 20px; text-align: center;">
                         <a href="forgot_password.php" style="color: #171739; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.3s;">
                             <i class="fas fa-key mr-1"></i> Forgot Password?
                         </a>
