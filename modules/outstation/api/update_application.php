@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 try {
     // Validate required fields
-    $required_fields = ['application_id', 'purpose', 'destination', 'departure_date', 'return_date', 'transportation_mode'];
+    $required_fields = ['application_id', 'purpose', 'purpose_details', 'destination', 'departure_date', 'return_date', 'transportation_mode'];
 
     foreach ($required_fields as $field) {
         if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
@@ -31,6 +31,7 @@ try {
     // Get form data
     $application_id = intval($_POST['application_id']);
     $purpose = trim($_POST['purpose']);
+    $purpose_details = trim($_POST['purpose_details']);
     $destination = trim($_POST['destination']);
     $departure_date = $_POST['departure_date'];
     $departure_time = $_POST['departure_time'] ?? null;
@@ -87,6 +88,7 @@ try {
     // Update application
     $sql = "UPDATE outstation_applications SET
             purpose = :purpose,
+            purpose_details = :purpose_details,
             destination = :destination,
             departure_date = :departure_date,
             departure_time = :departure_time,
@@ -104,6 +106,7 @@ try {
     $stmt = $pdo->prepare($sql);
     $result = $stmt->execute([
         ':purpose' => $purpose,
+        ':purpose_details' => $purpose_details,
         ':destination' => $destination,
         ':departure_date' => $departure_date,
         ':departure_time' => $departure_time,
