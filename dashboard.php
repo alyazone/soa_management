@@ -139,6 +139,21 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
     <style>
+        :root {
+            --sidebar-width: 260px;
+            --header-height: 70px;
+            --primary-color: #3b82f6;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #6b7280;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --border-radius-sm: 8px;
+            --transition: all 0.3s ease;
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -156,55 +171,17 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
             min-height: 100vh;
         }
 
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
-            background: #ffffff;
-            border-right: 1px solid #e5e5e7;
-            padding: 20px 0;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .sidebar .logo {
-            padding: 0 20px 20px;
-            border-bottom: 1px solid #e5e5e7;
-            margin-bottom: 20px;
-        }
-
-        .sidebar .logo h4 {
-            color: #1d1d1f;
-            font-weight: 600;
-            font-size: 18px;
-        }
-
-        .sidebar .nav-item {
-            padding: 12px 20px;
-            color: #6e6e73;
-            text-decoration: none;
-            display: block;
-            transition: all 0.3s;
-            font-size: 14px;
-        }
-
-        .sidebar .nav-item:hover,
-        .sidebar .nav-item.active {
-            background: #f5f5f7;
-            color: #0071e3;
-            text-decoration: none;
-        }
-
-        .sidebar .nav-item i {
-            width: 20px;
-            margin-right: 10px;
-        }
-
         /* Main Content */
         .main-content {
-            margin-left: 250px;
+            margin-left: var(--sidebar-width);
             padding: 30px;
-            width: calc(100% - 250px);
+            width: calc(100% - var(--sidebar-width));
+            transition: var(--transition);
+        }
+
+        .sidebar-collapsed .main-content {
+            margin-left: 80px;
+            width: calc(100% - 80px);
         }
 
         .header {
@@ -218,24 +195,6 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
             font-size: 32px;
             font-weight: 600;
             color: #1d1d1f;
-        }
-
-        .header .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .header .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
         }
 
         /* Cards Grid */
@@ -456,13 +415,57 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
         .badge-rejected { background: #f8d7da; color: #721c24; }
         .badge-closed { background: #e2e3e5; color: #383d41; }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 0;
-                transform: translateX(-100%);
-            }
+        /* User Dropdown */
+        .user-dropdown-menu {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: var(--transition);
+        }
 
+        .user-dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .user-dropdown-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--gray-700);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: var(--transition);
+        }
+
+        .user-dropdown-menu .dropdown-item:hover {
+            background: var(--gray-50);
+            color: var(--primary-color);
+        }
+
+        .user-dropdown-menu .dropdown-item i {
+            width: 16px;
+            text-align: center;
+        }
+
+        #userInfoDropdown {
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
             .main-content {
                 margin-left: 0;
                 width: 100%;
@@ -479,38 +482,7 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="logo">
-                <h4><i class="fas fa-shield-alt"></i> KYROL Security</h4>
-            </div>
-
-            <a href="dashboard.php" class="nav-item active">
-                <i class="fas fa-th-large"></i> Dashboard
-            </a>
-            <a href="modules/clients/index.php" class="nav-item">
-                <i class="fas fa-building"></i> Clients
-            </a>
-            <a href="modules/suppliers/index.php" class="nav-item">
-                <i class="fas fa-truck"></i> Suppliers
-            </a>
-            <a href="modules/soa/client/index.php" class="nav-item">
-                <i class="fas fa-file-invoice"></i> Client SOA
-            </a>
-            <a href="modules/soa/supplier/index.php" class="nav-item">
-                <i class="fas fa-file-invoice-dollar"></i> Supplier SOA
-            </a>
-            <a href="modules/claims/index.php" class="nav-item">
-                <i class="fas fa-receipt"></i> Claims
-            </a>
-            <?php if($_SESSION["position"] == "Admin"): ?>
-            <a href="modules/staff/index.php" class="nav-item">
-                <i class="fas fa-users"></i> Staff
-            </a>
-            <?php endif; ?>
-            <a href="modules/auth/logout.php" class="nav-item">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-        </div>
+        <?php include_once "includes/modern-sidebar.php"; ?>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -519,15 +491,6 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
                 <div>
                     <h1>Dashboard</h1>
                     <p style="color: #6e6e73; font-size: 14px;">Welcome back, <?php echo htmlspecialchars($_SESSION['full_name']); ?></p>
-                </div>
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <?php echo strtoupper(substr($_SESSION['full_name'], 0, 1)); ?>
-                    </div>
-                    <div>
-                        <div style="font-weight: 600; font-size: 14px;"><?php echo htmlspecialchars($_SESSION['full_name']); ?></div>
-                        <div style="color: #6e6e73; font-size: 12px;"><?php echo htmlspecialchars($_SESSION['position']); ?></div>
-                    </div>
                 </div>
             </div>
 
@@ -798,6 +761,51 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Sidebar collapse functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
+            if (sidebarCollapseBtn) {
+                sidebarCollapseBtn.addEventListener('click', function() {
+                    document.body.classList.toggle('sidebar-collapsed');
+                });
+            }
+
+            // Submenu toggle functionality
+            const submenuToggles = document.querySelectorAll('[data-toggle="submenu"]');
+            submenuToggles.forEach(function(toggle) {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const submenu = this.nextElementSibling;
+                    if (submenu && submenu.classList.contains('submenu')) {
+                        submenu.classList.toggle('show');
+                    }
+                });
+            });
+
+            // User dropdown functionality
+            const userDropdown = document.getElementById('userInfoDropdown');
+            if (userDropdown) {
+                userDropdown.addEventListener('click', function() {
+                    const menu = document.getElementById('userDropdownMenu');
+                    if (menu) {
+                        menu.classList.toggle('show');
+                    }
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!userDropdown.contains(e.target)) {
+                        const menu = document.getElementById('userDropdownMenu');
+                        if (menu) {
+                            menu.classList.remove('show');
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 
     <script>
         // SOA Status Chart
