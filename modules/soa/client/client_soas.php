@@ -53,7 +53,7 @@ try {
         exit;
     }
     
-    $soa_query = "SELECT * FROM client_soa WHERE client_id = ?";
+    $soa_query = "SELECT *, (total_amount - paid_amount) as balance FROM client_soa WHERE client_id = ?";
     $query_params = [$client_id];
     
     if($filter_applied) {
@@ -74,12 +74,15 @@ try {
     $soas = $stmt->fetchAll();
     
     // Get statistics (always show all stats regardless of filter)
-    $stmt = $pdo->prepare("SELECT 
+    $stmt = $pdo->prepare("SELECT
                           COUNT(*) as total_soas,
                           SUM(CASE WHEN status = 'Paid' THEN 1 ELSE 0 END) as paid_count,
                           SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_count,
                           SUM(CASE WHEN status = 'Overdue' THEN 1 ELSE 0 END) as overdue_count,
-                          SUM(CASE WHEN status = 'Closed' THEN 1 ELSE 0 END) as closed_count
+                          SUM(CASE WHEN status = 'Closed' THEN 1 ELSE 0 END) as closed_count,
+                          COALESCE(SUM(total_amount), 0) as total_invoiced,
+                          COALESCE(SUM(paid_amount), 0) as total_paid,
+                          COALESCE(SUM(total_amount - paid_amount), 0) as total_balance
                           FROM client_soa WHERE client_id = ?");
     $stmt->execute([$client_id]);
     $stats = $stmt->fetch();
@@ -145,6 +148,7 @@ $month_names = [1=>'Jan', 2=>'Feb', 3=>'Mar', 4=>'Apr', 5=>'May', 6=>'Jun', 7=>'
                     </div>
                 </div>
                 <div class="header-right">
+                    <a href="account_summary.php?client_id=<?php echo $client_id; ?>" class="export-btn info"><i class="fas fa-chart-bar"></i> Account Summary</a>
                     <a href="index.php" class="export-btn secondary"><i class="fas fa-arrow-left"></i> Back to Client List</a>
                     <a href="add.php?client_id=<?php echo $client_id; ?>" class="export-btn"><i class="fas fa-plus"></i> Create New SOA</a>
                 </div>
@@ -185,6 +189,22 @@ $month_names = [1=>'Jan', 2=>'Feb', 3=>'Mar', 4=>'Apr', 5=>'May', 6=>'Jun', 7=>'
                 <div class="stat-card-detailed warning"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-content"><h3><?php echo $stats['pending_count'] ?? 0; ?></h3><p>Pending</p></div></div>
                 <div class="stat-card-detailed danger"><div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div><div class="stat-content"><h3><?php echo $stats['overdue_count'] ?? 0; ?></h3><p>Overdue</p></div></div>
                 <div class="stat-card-detailed secondary"><div class="stat-icon"><i class="fas fa-lock"></i></div><div class="stat-content"><h3><?php echo $stats['closed_count'] ?? 0; ?></h3><p>Closed</p></div></div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="financial-summary" data-aos="fade-up" data-aos-delay="100">
+                <div class="fin-card">
+                    <span class="fin-label">Total Invoiced</span>
+                    <span class="fin-value">RM <?php echo number_format($stats['total_invoiced'] ?? 0, 2); ?></span>
+                </div>
+                <div class="fin-card">
+                    <span class="fin-label">Total Paid</span>
+                    <span class="fin-value fin-success">RM <?php echo number_format($stats['total_paid'] ?? 0, 2); ?></span>
+                </div>
+                <div class="fin-card">
+                    <span class="fin-label">Outstanding Balance</span>
+                    <span class="fin-value <?php echo ($stats['total_balance'] ?? 0) > 0 ? 'fin-danger' : 'fin-success'; ?>">RM <?php echo number_format($stats['total_balance'] ?? 0, 2); ?></span>
+                </div>
             </div>
 
             <div class="table-card" data-aos="fade-up" data-aos-delay="200">
@@ -252,7 +272,7 @@ $month_names = [1=>'Jan', 2=>'Feb', 3=>'Mar', 4=>'Apr', 5=>'May', 6=>'Jun', 7=>'
                     <table class="modern-table">
                         <thead>
                             <tr>
-                                <th>Account #</th><th>Issue Date</th><th>Due Date</th><th>Amount</th><th>Status</th><th>Actions</th>
+                                <th>Account #</th><th>Issue Date</th><th>Due Date</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -263,6 +283,8 @@ $month_names = [1=>'Jan', 2=>'Feb', 3=>'Mar', 4=>'Apr', 5=>'May', 6=>'Jun', 7=>'
                                     <td><?php echo date('M d, Y', strtotime($soa['issue_date'])); ?></td>
                                     <td><?php echo date('M d, Y', strtotime($soa['due_date'])); ?></td>
                                     <td><span class="amount-display">RM <?php echo number_format($soa['total_amount'], 2); ?></span></td>
+                                    <td><span style="color:var(--success-color);font-weight:600;">RM <?php echo number_format($soa['paid_amount'], 2); ?></span></td>
+                                    <td><span class="<?php echo $soa['balance'] > 0 ? 'balance-due' : 'balance-clear'; ?>">RM <?php echo number_format($soa['balance'], 2); ?></span></td>
                                     <td><span class="status-badge status-<?php echo strtolower($soa['status']); ?>"><?php echo htmlspecialchars($soa['status']); ?></span></td>
                                     <td>
                                         <div class="action-buttons">
@@ -278,7 +300,7 @@ $month_names = [1=>'Jan', 2=>'Feb', 3=>'Mar', 4=>'Apr', 5=>'May', 6=>'Jun', 7=>'
                                 </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="6" class="text-center no-data"><div class="no-data-content"><i class="fas fa-file-invoice-dollar"></i><h3>No SOAs Found</h3><p>No records match your criteria. Try adjusting the filters.</p></div></td></tr>
+                                <tr><td colspan="8" class="text-center no-data"><div class="no-data-content"><i class="fas fa-file-invoice-dollar"></i><h3>No SOAs Found</h3><p>No records match your criteria. Try adjusting the filters.</p></div></td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -345,7 +367,7 @@ $month_names = [1=>'Jan', 2=>'Feb', 3=>'Mar', 4=>'Apr', 5=>'May', 6=>'Jun', 7=>'
         }
     </script>
     <style>
-        .profile-header{background:white;border-radius:var(--border-radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:2rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1.5rem}.profile-avatar{width:80px;height:80px;background:var(--gray-700);border-radius:var(--border-radius);display:flex;align-items:center;justify-content:center;color:white;font-size:2rem;flex-shrink:0}.profile-info h2{color:var(--gray-900);margin-bottom:.25rem;font-size:1.5rem;font-weight:600}.profile-subtitle{color:var(--gray-600);margin-bottom:1rem;max-width:60ch}.profile-meta{display:flex;flex-wrap:wrap;gap:1.5rem}.meta-item{display:flex;align-items:center;gap:.5rem;color:var(--gray-600);font-size:.875rem}.meta-item i{color:var(--gray-400)}.stats-grid-detailed{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}.stat-card-detailed{background:white;border-radius:var(--border-radius);padding:1rem;box-shadow:var(--shadow-sm);border:1px solid var(--gray-200);display:flex;align-items:center;gap:1rem}.stat-card-detailed .stat-icon{width:40px;height:40px;border-radius:var(--border-radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.25rem;color:white}.stat-card-detailed.primary .stat-icon{background:var(--primary-color)}.stat-card-detailed.success .stat-icon{background:var(--success-color)}.stat-card-detailed.warning .stat-icon{background:var(--warning-color)}.stat-card-detailed.danger .stat-icon{background:var(--danger-color)}.stat-card-detailed.secondary .stat-icon{background:var(--gray-500)}.stat-card-detailed .stat-content h3{font-size:1.25rem;font-weight:700;color:var(--gray-900)}.stat-card-detailed .stat-content p{font-size:.75rem;color:var(--gray-600);margin:0;text-transform:uppercase}.filter-container{padding:1.5rem;border-top:1px solid var(--gray-200);background:var(--gray-50)}.filter-container.hidden{display:none}.filter-grid{display:grid;grid-template-columns:1fr 3fr;gap:2rem;margin-bottom:1.5rem}.filter-group .filter-label{display:block;font-weight:600;color:var(--gray-700);margin-bottom:.5rem}.filter-select{width:100%;padding:.75rem;border:1px solid var(--gray-300);border-radius:var(--border-radius-sm);font-size:.875rem}.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.75rem}.month-checkbox{display:flex;align-items:center;gap:.5rem}.month-checkbox label{font-size:.875rem;color:var(--gray-700);cursor:pointer}.month-checkbox input{cursor:pointer}.select-all-container{font-weight:600}.filter-actions{display:flex;gap:1rem;padding-top:1rem;border-top:1px solid var(--gray-200);margin-top:1rem}.active-filters-bar{display:flex;align-items:center;gap:.75rem;padding:1rem 1.5rem;background:rgba(59,130,246,.05);border-top:1px solid var(--gray-200);border-bottom:1px solid var(--gray-200)}.bar-title{font-weight:600;color:var(--gray-700)}.filter-tag{padding:.25rem .75rem;border-radius:9999px;font-size:.75rem;font-weight:500}.filter-tag.year{background:var(--primary-color);color:white}.filter-tag.month{background:var(--info-color);color:white}.filter-count{margin-left:auto;font-size:.875rem;color:var(--gray-600)}.account-number{font-family:monospace;font-weight:600;color:var(--primary-color)}.amount-display{font-weight:600;font-size:.875rem;color:var(--gray-800)}.status-badge.status-closed{background:rgba(107,114,128,.1);color:var(--gray-600)}.action-buttons{display:flex;gap:.5rem}.action-btn-view{background:rgba(59,130,246,.1);color:var(--primary-color)}.action-btn-view:hover{background:var(--primary-color);color:white}.action-btn-pdf{background:rgba(16,185,129,.1);color:var(--success-color)}.action-btn-pdf:hover{background:var(--success-color);color:white}.action-btn-edit{background:rgba(245,158,11,.1);color:var(--warning-color)}.action-btn-edit:hover{background:var(--warning-color);color:white}.action-btn-close{background:rgba(107,114,128,.1);color:var(--gray-600)}.action-btn-close:hover{background:var(--gray-600);color:white}.action-btn-delete{background:rgba(239,68,68,.1);color:var(--danger-color)}.action-btn-delete:hover{background:var(--danger-color);color:white}.no-data{padding:3rem!important}.no-data-content i{font-size:3rem;color:var(--gray-300);margin-bottom:1rem}.no-data-content h3{color:var(--gray-700);margin-bottom:.5rem}.no-data-content p{color:var(--gray-500);margin-bottom:1.5rem}.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.5rem;border:none;border-radius:var(--border-radius-sm);font-size:.875rem;font-weight:500;text-decoration:none;cursor:pointer;transition:var(--transition)}.btn-primary{background:var(--primary-color);color:white}.btn-primary:hover{background:var(--primary-dark)}.btn-secondary{background:var(--gray-200);color:var(--gray-800)}.btn-secondary:hover{background:var(--gray-300)}@media(max-width:1024px){.filter-grid{grid-template-columns:1fr;gap:1.5rem}.month-grid{grid-template-columns:repeat(4,1fr)}}@media(max-width:768px){.stats-grid-detailed{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.month-grid{grid-template-columns:repeat(3,1fr)}}
+        .profile-header{background:white;border-radius:var(--border-radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:2rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1.5rem}.profile-avatar{width:80px;height:80px;background:var(--gray-700);border-radius:var(--border-radius);display:flex;align-items:center;justify-content:center;color:white;font-size:2rem;flex-shrink:0}.profile-info h2{color:var(--gray-900);margin-bottom:.25rem;font-size:1.5rem;font-weight:600}.profile-subtitle{color:var(--gray-600);margin-bottom:1rem;max-width:60ch}.profile-meta{display:flex;flex-wrap:wrap;gap:1.5rem}.meta-item{display:flex;align-items:center;gap:.5rem;color:var(--gray-600);font-size:.875rem}.meta-item i{color:var(--gray-400)}.stats-grid-detailed{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}.stat-card-detailed{background:white;border-radius:var(--border-radius);padding:1rem;box-shadow:var(--shadow-sm);border:1px solid var(--gray-200);display:flex;align-items:center;gap:1rem}.stat-card-detailed .stat-icon{width:40px;height:40px;border-radius:var(--border-radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.25rem;color:white}.stat-card-detailed.primary .stat-icon{background:var(--primary-color)}.stat-card-detailed.success .stat-icon{background:var(--success-color)}.stat-card-detailed.warning .stat-icon{background:var(--warning-color)}.stat-card-detailed.danger .stat-icon{background:var(--danger-color)}.stat-card-detailed.secondary .stat-icon{background:var(--gray-500)}.stat-card-detailed .stat-content h3{font-size:1.25rem;font-weight:700;color:var(--gray-900)}.stat-card-detailed .stat-content p{font-size:.75rem;color:var(--gray-600);margin:0;text-transform:uppercase}.filter-container{padding:1.5rem;border-top:1px solid var(--gray-200);background:var(--gray-50)}.filter-container.hidden{display:none}.filter-grid{display:grid;grid-template-columns:1fr 3fr;gap:2rem;margin-bottom:1.5rem}.filter-group .filter-label{display:block;font-weight:600;color:var(--gray-700);margin-bottom:.5rem}.filter-select{width:100%;padding:.75rem;border:1px solid var(--gray-300);border-radius:var(--border-radius-sm);font-size:.875rem}.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.75rem}.month-checkbox{display:flex;align-items:center;gap:.5rem}.month-checkbox label{font-size:.875rem;color:var(--gray-700);cursor:pointer}.month-checkbox input{cursor:pointer}.select-all-container{font-weight:600}.filter-actions{display:flex;gap:1rem;padding-top:1rem;border-top:1px solid var(--gray-200);margin-top:1rem}.active-filters-bar{display:flex;align-items:center;gap:.75rem;padding:1rem 1.5rem;background:rgba(59,130,246,.05);border-top:1px solid var(--gray-200);border-bottom:1px solid var(--gray-200)}.bar-title{font-weight:600;color:var(--gray-700)}.filter-tag{padding:.25rem .75rem;border-radius:9999px;font-size:.75rem;font-weight:500}.filter-tag.year{background:var(--primary-color);color:white}.filter-tag.month{background:var(--info-color);color:white}.filter-count{margin-left:auto;font-size:.875rem;color:var(--gray-600)}.account-number{font-family:monospace;font-weight:600;color:var(--primary-color)}.amount-display{font-weight:600;font-size:.875rem;color:var(--gray-800)}.status-badge.status-closed{background:rgba(107,114,128,.1);color:var(--gray-600)}.action-buttons{display:flex;gap:.5rem}.action-btn-view{background:rgba(59,130,246,.1);color:var(--primary-color)}.action-btn-view:hover{background:var(--primary-color);color:white}.action-btn-pdf{background:rgba(16,185,129,.1);color:var(--success-color)}.action-btn-pdf:hover{background:var(--success-color);color:white}.action-btn-edit{background:rgba(245,158,11,.1);color:var(--warning-color)}.action-btn-edit:hover{background:var(--warning-color);color:white}.action-btn-close{background:rgba(107,114,128,.1);color:var(--gray-600)}.action-btn-close:hover{background:var(--gray-600);color:white}.action-btn-delete{background:rgba(239,68,68,.1);color:var(--danger-color)}.action-btn-delete:hover{background:var(--danger-color);color:white}.no-data{padding:3rem!important}.no-data-content i{font-size:3rem;color:var(--gray-300);margin-bottom:1rem}.no-data-content h3{color:var(--gray-700);margin-bottom:.5rem}.no-data-content p{color:var(--gray-500);margin-bottom:1.5rem}.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.5rem;border:none;border-radius:var(--border-radius-sm);font-size:.875rem;font-weight:500;text-decoration:none;cursor:pointer;transition:var(--transition)}.btn-primary{background:var(--primary-color);color:white}.btn-primary:hover{background:var(--primary-dark)}.btn-secondary{background:var(--gray-200);color:var(--gray-800)}.btn-secondary:hover{background:var(--gray-300)}.financial-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem}.fin-card{background:white;border-radius:var(--border-radius);padding:1rem 1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center}.fin-label{font-size:.875rem;color:var(--gray-600);font-weight:500}.fin-value{font-size:1.125rem;font-weight:700;color:var(--gray-900)}.fin-success{color:var(--success-color)!important}.fin-danger{color:var(--danger-color)!important}.balance-due{font-weight:600;color:var(--danger-color)}.balance-clear{font-weight:600;color:var(--success-color)}@media(max-width:1024px){.filter-grid{grid-template-columns:1fr;gap:1.5rem}.month-grid{grid-template-columns:repeat(4,1fr)}.financial-summary{grid-template-columns:1fr}}@media(max-width:768px){.stats-grid-detailed{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.month-grid{grid-template-columns:repeat(3,1fr)}}
     </style>
 </body>
 </html>

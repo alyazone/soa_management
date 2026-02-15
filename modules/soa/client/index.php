@@ -19,7 +19,9 @@ if(!$access_denied) {
         $stmt = $pdo->query("
             SELECT c.client_id, c.client_name, c.address, c.pic_name, c.pic_contact, c.pic_email,
                    COUNT(s.soa_id) as soa_count,
-                   COALESCE(SUM(CASE WHEN s.status = 'Pending' OR s.status = 'Overdue' THEN s.total_amount ELSE 0 END), 0) as pending_amount
+                   COALESCE(SUM(s.total_amount), 0) as total_invoiced,
+                   COALESCE(SUM(s.paid_amount), 0) as total_paid,
+                   COALESCE(SUM(s.total_amount - s.paid_amount), 0) as outstanding_balance
             FROM clients c
             LEFT JOIN client_soa s ON c.client_id = s.client_id
             GROUP BY c.client_id
@@ -91,7 +93,8 @@ if(!$access_denied) {
                                     <th>Client Info</th>
                                     <th>Contact Person</th>
                                     <th>SOA Count</th>
-                                    <th>Pending Amount</th>
+                                    <th>Total Invoiced</th>
+                                    <th>Outstanding Balance</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -116,20 +119,26 @@ if(!$access_denied) {
                                         </td>
                                         <td><span class="soa-count-badge"><?php echo $client['soa_count']; ?> SOAs</span></td>
                                         <td>
-                                            <span class="amount-display <?php echo $client['pending_amount'] > 0 ? 'has-amount' : 'no-amount'; ?>">
-                                                RM <?php echo number_format($client['pending_amount'], 2); ?>
+                                            <span class="amount-display" style="color:var(--gray-800);">
+                                                RM <?php echo number_format($client['total_invoiced'], 2); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="amount-display <?php echo $client['outstanding_balance'] > 0 ? 'has-amount' : 'no-amount'; ?>">
+                                                RM <?php echo number_format($client['outstanding_balance'], 2); ?>
                                             </span>
                                         </td>
                                         <td>
                                             <div class="action-buttons">
                                                 <a href="client_soas.php?client_id=<?php echo $client['client_id']; ?>" class="action-btn action-btn-view" title="View SOAs"><i class="fas fa-file-invoice"></i></a>
+                                                <a href="account_summary.php?client_id=<?php echo $client['client_id']; ?>" class="action-btn action-btn-summary" title="Account Summary"><i class="fas fa-chart-bar"></i></a>
                                                 <a href="add.php?client_id=<?php echo $client['client_id']; ?>" class="action-btn action-btn-add" title="Add SOA"><i class="fas fa-plus"></i></a>
                                             </div>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="5" class="text-center no-data"><div class="no-data-content"><h3>No Clients Found</h3></div></td></tr>
+                                    <tr><td colspan="6" class="text-center no-data"><div class="no-data-content"><h3>No Clients Found</h3></div></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -148,7 +157,7 @@ if(!$access_denied) {
         });
     </script>
     <style>
-        .client-info{display:flex;align-items:center;gap:.75rem}.client-avatar{width:40px;height:40px;background:var(--gray-700);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0}.client-name{font-weight:600;color:var(--gray-900);font-size:.875rem}.client-address{font-size:.75rem;color:var(--gray-500)}.contact-person{display:flex;flex-direction:column;gap:.25rem}.contact-person .person-name,.contact-person .contact-item{display:flex;align-items:center;gap:.5rem;font-size:.875rem;color:var(--gray-700)}.contact-person .contact-item{font-size:.8rem;color:var(--gray-600)}.contact-person i{color:var(--gray-400);width:14px;text-align:center}.soa-count-badge{display:inline-flex;align-items:center;padding:.25rem .75rem;background:rgba(59,130,246,.1);color:var(--primary-color);border-radius:9999px;font-size:.75rem;font-weight:500}.amount-display{font-weight:600;font-size:.875rem}.amount-display.has-amount{color:var(--danger-color)}.amount-display.no-amount{color:var(--gray-400)}.action-buttons{display:flex;gap:.5rem}.action-btn{width:32px;height:32px;border:none;border-radius:var(--border-radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);font-size:.875rem}.action-btn-view{background:rgba(59,130,246,.1);color:var(--primary-color)}.action-btn-view:hover{background:var(--primary-color);color:white}.action-btn-add{background:rgba(16,185,129,.1);color:var(--success-color)}.action-btn-add:hover{background:var(--success-color);color:white}.no-data{padding:3rem!important}.no-data-content{text-align:center}.no-data-content h3{color:var(--gray-700);margin-bottom:.5rem}@media (max-width:768px){.client-info{flex-direction:column;align-items:flex-start;gap:.5rem}.action-buttons{flex-direction:column}}
+        .client-info{display:flex;align-items:center;gap:.75rem}.client-avatar{width:40px;height:40px;background:var(--gray-700);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0}.client-name{font-weight:600;color:var(--gray-900);font-size:.875rem}.client-address{font-size:.75rem;color:var(--gray-500)}.contact-person{display:flex;flex-direction:column;gap:.25rem}.contact-person .person-name,.contact-person .contact-item{display:flex;align-items:center;gap:.5rem;font-size:.875rem;color:var(--gray-700)}.contact-person .contact-item{font-size:.8rem;color:var(--gray-600)}.contact-person i{color:var(--gray-400);width:14px;text-align:center}.soa-count-badge{display:inline-flex;align-items:center;padding:.25rem .75rem;background:rgba(59,130,246,.1);color:var(--primary-color);border-radius:9999px;font-size:.75rem;font-weight:500}.amount-display{font-weight:600;font-size:.875rem}.amount-display.has-amount{color:var(--danger-color)}.amount-display.no-amount{color:var(--gray-400)}.action-buttons{display:flex;gap:.5rem}.action-btn{width:32px;height:32px;border:none;border-radius:var(--border-radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);font-size:.875rem}.action-btn-view{background:rgba(59,130,246,.1);color:var(--primary-color)}.action-btn-view:hover{background:var(--primary-color);color:white}.action-btn-summary{background:rgba(245,158,11,.1);color:var(--warning-color)}.action-btn-summary:hover{background:var(--warning-color);color:white}.action-btn-add{background:rgba(16,185,129,.1);color:var(--success-color)}.action-btn-add:hover{background:var(--success-color);color:white}.no-data{padding:3rem!important}.no-data-content{text-align:center}.no-data-content h3{color:var(--gray-700);margin-bottom:.5rem}@media (max-width:768px){.client-info{flex-direction:column;align-items:flex-start;gap:.5rem}.action-buttons{flex-direction:column}}
     </style>
 </body>
 </html>
