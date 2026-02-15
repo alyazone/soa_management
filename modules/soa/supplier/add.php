@@ -11,8 +11,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION[
 
 $errors = [];
 $form_data = [
-    'invoice_number' => '', 'supplier_id' => '', 'issue_date' => date('Y-m-d'), 
-    'payment_due_date' => date('Y-m-d', strtotime('+30 days')), 'purchase_description' => '', 
+    'invoice_number' => '', 'supplier_id' => '', 'po_id' => '', 'issue_date' => date('Y-m-d'),
+    'payment_due_date' => date('Y-m-d', strtotime('+30 days')), 'purchase_description' => '',
     'amount' => '', 'payment_status' => 'Pending', 'payment_method' => ''
 ];
 
@@ -32,17 +32,77 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     if(empty(trim($form_data["amount"])) || !is_numeric(trim($form_data["amount"])) || floatval(trim($form_data["amount"])) <= 0) $errors['amount'] = "Please enter a valid positive amount.";
     if(empty($form_data["payment_status"])) $errors['payment_status'] = "Please select payment status.";
 
+    // If PO selected, validate the invoice amount doesn't exceed remaining balance
+    $po_id_val = !empty($form_data['po_id']) ? intval($form_data['po_id']) : null;
+    if($po_id_val){
+        try {
+            $check_stmt = $pdo->prepare("SELECT total_amount FROM purchase_orders WHERE po_id = :id AND status IN ('Approved', 'Partially Invoiced')");
+            $check_stmt->bindParam(':id', $po_id_val, PDO::PARAM_INT);
+            $check_stmt->execute();
+            $po_row = $check_stmt->fetch(PDO::FETCH_ASSOC);
+
+            if(!$po_row){
+                $errors['po_id'] = "Selected PO is not available for invoicing.";
+            } else {
+                $inv_stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM supplier_soa WHERE po_id = :id");
+                $inv_stmt->bindParam(':id', $po_id_val, PDO::PARAM_INT);
+                $inv_stmt->execute();
+                $already_invoiced = floatval($inv_stmt->fetchColumn());
+                $remaining = round(floatval($po_row['total_amount']) - $already_invoiced, 2);
+                $this_amount = floatval(trim($form_data['amount']));
+
+                if($this_amount > $remaining + 0.01){
+                    $errors['amount'] = "Amount (RM " . number_format($this_amount, 2) . ") exceeds remaining PO balance (RM " . number_format($remaining, 2) . ").";
+                }
+            }
+        } catch(PDOException $e) {
+            $errors['po_id'] = "Error validating PO.";
+        }
+    }
+
     if(empty($errors)){
-        $sql = "INSERT INTO supplier_soa (invoice_number, supplier_id, issue_date, payment_due_date, purchase_description, amount, payment_status, payment_method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        if($stmt = $pdo->prepare($sql)){
+        try {
+            $pdo->beginTransaction();
+
+            $sql = "INSERT INTO supplier_soa (invoice_number, supplier_id, po_id, issue_date, payment_due_date, purchase_description, amount, payment_status, payment_method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $pdo->prepare($sql);
             $created_by = $_SESSION["staff_id"];
             $stmt->execute([
-                trim($form_data['invoice_number']), $form_data['supplier_id'], $form_data['issue_date'], 
-                $form_data['payment_due_date'], trim($form_data['purchase_description']), trim($form_data['amount']), 
-                $form_data['payment_status'], trim($form_data['payment_method']), $created_by
+                trim($form_data['invoice_number']), $form_data['supplier_id'], $po_id_val,
+                $form_data['issue_date'], $form_data['payment_due_date'], trim($form_data['purchase_description']),
+                trim($form_data['amount']), $form_data['payment_status'], trim($form_data['payment_method']), $created_by
             ]);
+
+            // Update PO status if linked
+            if($po_id_val){
+                $inv_stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM supplier_soa WHERE po_id = :id");
+                $inv_stmt->bindParam(':id', $po_id_val, PDO::PARAM_INT);
+                $inv_stmt->execute();
+                $total_invoiced = floatval($inv_stmt->fetchColumn());
+
+                $po_stmt = $pdo->prepare("SELECT total_amount FROM purchase_orders WHERE po_id = :id");
+                $po_stmt->bindParam(':id', $po_id_val, PDO::PARAM_INT);
+                $po_stmt->execute();
+                $po_total = floatval($po_stmt->fetchColumn());
+
+                if($total_invoiced >= $po_total){
+                    $new_status = 'Closed';
+                } else {
+                    $new_status = 'Partially Invoiced';
+                }
+
+                $upd = $pdo->prepare("UPDATE purchase_orders SET status = :status WHERE po_id = :id");
+                $upd->bindParam(':status', $new_status);
+                $upd->bindParam(':id', $po_id_val, PDO::PARAM_INT);
+                $upd->execute();
+            }
+
+            $pdo->commit();
             header("location: index.php?success=added");
             exit();
+        } catch(PDOException $e) {
+            $pdo->rollBack();
+            $errors['general'] = "Error creating SOA: " . $e->getMessage();
         }
     }
 }
@@ -97,11 +157,27 @@ try {
         .form-input, .form-textarea, .form-select { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius-sm); background: var(--gray-50); transition: var(--transition); }
         .form-input:focus, .form-textarea:focus, .form-select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); background: white; }
         .form-input.error, .form-textarea.error, .form-select.error { border-color: var(--danger-color); }
+        .form-input:disabled, .form-select:disabled { background: var(--gray-200); color: var(--gray-500); cursor: not-allowed; }
         .error-message { color: var(--danger-color); font-size: 0.75rem; margin-top: 0.25rem; display: flex; align-items: center; gap: 0.25rem; }
         .form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; }
         .btn { padding: 0.75rem 1.5rem; border-radius: var(--border-radius-sm); font-weight: 500; text-decoration: none; transition: var(--transition); display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; }
         .btn-primary { background: var(--primary-color); color: white; } .btn-primary:hover { background: var(--primary-dark); }
         .btn-secondary { background: var(--gray-200); color: var(--gray-800); } .btn-secondary:hover { background: var(--gray-300); }
+        .po-info-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--border-radius-sm); padding: 1rem 1.25rem; margin-top: 0.75rem; display: none; }
+        .po-info-card.visible { display: block; }
+        .po-info-row { display: flex; justify-content: space-between; align-items: center; padding: 0.375rem 0; font-size: 0.8125rem; }
+        .po-info-label { color: var(--gray-500); font-weight: 500; }
+        .po-info-value { color: var(--gray-900); font-weight: 600; }
+        .po-info-value.success { color: var(--success-color); }
+        .po-info-value.warning { color: var(--warning-color); }
+        .po-info-value.danger { color: var(--danger-color); }
+        .po-badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; background: rgba(59, 130, 246, 0.1); color: var(--primary-color); }
+        .supplier-locked-badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; background: rgba(245, 158, 11, 0.1); color: var(--warning-color); margin-left: 0.5rem; }
+        .alert { padding: 1rem 1.5rem; margin-bottom: 1.5rem; border-radius: var(--border-radius-sm); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
+        .alert-content { display: flex; align-items: center; gap: 0.75rem; font-weight: 500; }
+        .alert-close { background: none; border: none; cursor: pointer; opacity: 0.7; } .alert-close:hover { opacity: 1; }
+        .alert-error { background-color: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+        .form-help { font-size: 0.75rem; color: var(--gray-500); margin-top: 0.25rem; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -123,8 +199,15 @@ try {
         </header>
 
         <div class="dashboard-content">
+            <?php if(isset($errors['general'])): ?>
+                <div class="alert alert-error">
+                    <div class="alert-content"><i class="fas fa-exclamation-circle"></i><span><?php echo htmlspecialchars($errors['general']); ?></span></div>
+                    <button class="alert-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                </div>
+            <?php endif; ?>
+
             <div class="form-card">
-                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?><?php if($preselected_supplier) echo '?supplier_id='.$preselected_supplier; ?>" method="post" class="modern-form">
+                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?><?php if($preselected_supplier) echo '?supplier_id='.$preselected_supplier; ?>" method="post" class="modern-form" id="soaForm">
                     <div class="form-body">
                         <div class="form-section">
                             <div class="section-header"><h4><i class="fas fa-truck"></i> Supplier & Invoice Details</h4></div>
@@ -135,8 +218,8 @@ try {
                                     <?php if(isset($errors['invoice_number'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['invoice_number']; ?></span><?php endif; ?>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label required">Supplier</label>
-                                    <select name="supplier_id" class="form-select <?php echo isset($errors['supplier_id']) ? 'error' : ''; ?>">
+                                    <label class="form-label required">Supplier <span id="supplierLockedBadge" class="supplier-locked-badge" style="display:none;"><i class="fas fa-lock"></i> Locked by PO</span></label>
+                                    <select name="supplier_id" id="supplierSelect" class="form-select <?php echo isset($errors['supplier_id']) ? 'error' : ''; ?>">
                                         <option value="">Select a supplier...</option>
                                         <?php foreach($suppliers as $supplier): ?>
                                             <option value="<?php echo $supplier['supplier_id']; ?>" <?php echo ($supplier['supplier_id'] == $form_data['supplier_id']) ? 'selected' : ''; ?>>
@@ -145,6 +228,28 @@ try {
                                         <?php endforeach; ?>
                                     </select>
                                     <?php if(isset($errors['supplier_id'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['supplier_id']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label class="form-label">Purchase Order Reference</label>
+                                    <select name="po_id" id="poSelect" class="form-select <?php echo isset($errors['po_id']) ? 'error' : ''; ?>">
+                                        <option value="">No PO (manual entry)</option>
+                                    </select>
+                                    <?php if(isset($errors['po_id'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['po_id']; ?></span><?php endif; ?>
+                                    <span class="form-help">Select an approved PO to auto-fill description and amount</span>
+                                    <div id="poInfoCard" class="po-info-card">
+                                        <div class="po-info-row">
+                                            <span class="po-info-label">PO Total Amount</span>
+                                            <span class="po-info-value" id="poTotalAmount">-</span>
+                                        </div>
+                                        <div class="po-info-row">
+                                            <span class="po-info-label">Already Invoiced</span>
+                                            <span class="po-info-value" id="poInvoicedAmount">-</span>
+                                        </div>
+                                        <div class="po-info-row" style="border-top: 1px solid var(--gray-200); margin-top: 0.25rem; padding-top: 0.5rem;">
+                                            <span class="po-info-label" style="font-weight: 600;">Remaining Balance</span>
+                                            <span class="po-info-value success" id="poRemainingAmount">-</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -170,7 +275,7 @@ try {
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label class="form-label required">Amount (RM)</label>
-                                    <input type="number" step="0.01" name="amount" class="form-input <?php echo isset($errors['amount']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['amount']); ?>">
+                                    <input type="number" step="0.01" name="amount" id="amountInput" class="form-input <?php echo isset($errors['amount']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['amount']); ?>">
                                     <?php if(isset($errors['amount'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['amount']; ?></span><?php endif; ?>
                                 </div>
                                 <div class="form-group">
@@ -192,7 +297,7 @@ try {
                         <div class="form-section">
                             <div class="section-header"><h4><i class="fas fa-align-left"></i> Purchase Description</h4></div>
                             <div class="form-group full-width">
-                                <textarea name="purchase_description" class="form-textarea <?php echo isset($errors['purchase_description']) ? 'error' : ''; ?>" rows="4" placeholder="Enter service or product details..."><?php echo htmlspecialchars($form_data['purchase_description']); ?></textarea>
+                                <textarea name="purchase_description" id="descriptionInput" class="form-textarea <?php echo isset($errors['purchase_description']) ? 'error' : ''; ?>" rows="4" placeholder="Enter service or product details..."><?php echo htmlspecialchars($form_data['purchase_description']); ?></textarea>
                                 <?php if(isset($errors['purchase_description'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['purchase_description']; ?></span><?php endif; ?>
                             </div>
                         </div>
@@ -205,6 +310,118 @@ try {
             </div>
         </div>
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const supplierSelect = document.getElementById('supplierSelect');
+        const poSelect       = document.getElementById('poSelect');
+        const poInfoCard     = document.getElementById('poInfoCard');
+        const amountInput    = document.getElementById('amountInput');
+        const descInput      = document.getElementById('descriptionInput');
+        const lockedBadge    = document.getElementById('supplierLockedBadge');
+
+        let poLocked = false; // tracks whether supplier is locked by a PO selection
+
+        // When supplier changes → load available POs
+        supplierSelect.addEventListener('change', function() {
+            const supplierId = this.value;
+            resetPoDropdown();
+
+            if (!supplierId) return;
+
+            fetch('get_po_data.php?action=list_pos&supplier_id=' + encodeURIComponent(supplierId))
+                .then(r => r.json())
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(po => {
+                            const opt = document.createElement('option');
+                            opt.value = po.po_id;
+                            opt.textContent = po.po_number + '  —  RM ' + formatNumber(po.total_amount) +
+                                              ' (Remaining: RM ' + formatNumber(po.remaining_amount) + ')';
+                            opt.dataset.remaining = po.remaining_amount;
+                            poSelect.appendChild(opt);
+                        });
+                    }
+                })
+                .catch(() => {});
+        });
+
+        // When PO changes → fetch details & auto-fill
+        poSelect.addEventListener('change', function() {
+            const poId = this.value;
+
+            if (!poId) {
+                hidePoInfo();
+                unlockSupplier();
+                return;
+            }
+
+            fetch('get_po_data.php?action=po_details&po_id=' + encodeURIComponent(poId))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) { hidePoInfo(); return; }
+
+                    // Show PO balance info card
+                    document.getElementById('poTotalAmount').textContent     = 'RM ' + formatNumber(data.total_amount);
+                    document.getElementById('poInvoicedAmount').textContent  = 'RM ' + formatNumber(data.invoiced_amount);
+                    document.getElementById('poRemainingAmount').textContent = 'RM ' + formatNumber(data.remaining_amount);
+
+                    // Colour-code remaining
+                    const remEl = document.getElementById('poRemainingAmount');
+                    remEl.className = 'po-info-value ' + (data.remaining_amount > 0 ? 'success' : 'danger');
+
+                    poInfoCard.classList.add('visible');
+
+                    // Auto-fill description
+                    descInput.value = data.description;
+
+                    // Auto-fill amount with remaining balance
+                    amountInput.value = data.remaining_amount.toFixed(2);
+
+                    // Lock supplier
+                    lockSupplier(data.supplier_id);
+                })
+                .catch(() => {});
+        });
+
+        function resetPoDropdown() {
+            poSelect.innerHTML = '<option value="">No PO (manual entry)</option>';
+            hidePoInfo();
+            unlockSupplier();
+        }
+
+        function hidePoInfo() {
+            poInfoCard.classList.remove('visible');
+        }
+
+        function lockSupplier(supplierId) {
+            supplierSelect.value = supplierId;
+            supplierSelect.disabled = true;
+            lockedBadge.style.display = 'inline-flex';
+            poLocked = true;
+        }
+
+        function unlockSupplier() {
+            supplierSelect.disabled = false;
+            lockedBadge.style.display = 'none';
+            poLocked = false;
+        }
+
+        // Re-enable the supplier select on form submit so its value gets posted
+        document.getElementById('soaForm').addEventListener('submit', function() {
+            supplierSelect.disabled = false;
+        });
+
+        function formatNumber(n) {
+            return parseFloat(n).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Trigger supplier change if pre-selected
+        if (supplierSelect.value) {
+            supplierSelect.dispatchEvent(new Event('change'));
+        }
+    });
+    </script>
 </body>
 </html>
 <?php ob_end_flush(); ?>
