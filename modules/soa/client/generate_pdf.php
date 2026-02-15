@@ -16,6 +16,13 @@ try {
     $stmt->execute([$soa_id]);
     $soa = $stmt->fetch(PDO::FETCH_ASSOC);
     if(!$soa) { die("SOA not found."); }
+
+    // Fetch payments for this SOA
+    $stmt = $pdo->prepare("SELECT * FROM soa_payments WHERE soa_id = ? ORDER BY payment_date ASC");
+    $stmt->execute([$soa_id]);
+    $soa_payments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $soa['balance'] = $soa['total_amount'] - $soa['paid_amount'];
 } catch(PDOException $e) {
     die("Database error: " . $e->getMessage());
 }
@@ -115,12 +122,46 @@ class PDF extends FPDF {
         $this->SetFont('Arial', '', 10);
         $this->Cell(40, 7, 'Subtotal', 0, 0, 'R');
         $this->Cell(40, 7, number_format($soa['total_amount'], 2), 0, 1, 'R');
-        
+
+        if($soa['paid_amount'] > 0) {
+            $this->SetX(120);
+            $this->SetFont('Arial', '', 10);
+            $this->SetTextColor(39, 174, 96);
+            $this->Cell(40, 7, 'Amount Paid', 0, 0, 'R');
+            $this->Cell(40, 7, '- ' . number_format($soa['paid_amount'], 2), 0, 1, 'R');
+            $this->SetTextColor(0);
+        }
+
         $this->SetX(120);
         $this->SetFont('Arial', 'B', 11);
         $this->SetFillColor(230, 230, 230);
-        $this->Cell(40, 9, 'Total Due (RM)', 1, 0, 'R', true);
-        $this->Cell(40, 9, number_format($soa['total_amount'], 2), 1, 1, 'R', true);
+        $balance = $soa['total_amount'] - $soa['paid_amount'];
+        $this->Cell(40, 9, 'Balance Due (RM)', 1, 0, 'R', true);
+        $this->Cell(40, 9, number_format($balance, 2), 1, 1, 'R', true);
+    }
+
+    function PaymentHistory($payments) {
+        if(empty($payments)) return;
+
+        $this->Ln(10);
+        $this->SetFont('Arial', 'B', 10);
+        $this->SetTextColor(0);
+        $this->Cell(0, 7, 'PAYMENT HISTORY', 0, 1, 'L');
+
+        $this->SetFont('Arial', 'B', 8);
+        $this->SetFillColor(230, 230, 230);
+        $this->Cell(30, 6, 'Date', 1, 0, 'C', true);
+        $this->Cell(35, 6, 'Amount (RM)', 1, 0, 'C', true);
+        $this->Cell(35, 6, 'Method', 1, 0, 'C', true);
+        $this->Cell(90, 6, 'Reference', 1, 1, 'C', true);
+
+        $this->SetFont('Arial', '', 8);
+        foreach($payments as $p) {
+            $this->Cell(30, 6, date('d/m/Y', strtotime($p['payment_date'])), 1, 0, 'C');
+            $this->Cell(35, 6, number_format($p['payment_amount'], 2), 1, 0, 'R');
+            $this->Cell(35, 6, $p['payment_method'], 1, 0, 'C');
+            $this->Cell(90, 6, $p['payment_reference'] ?: '-', 1, 1, 'L');
+        }
     }
 
     function StatusWatermark($status) {
@@ -168,6 +209,7 @@ $pdf->StatusWatermark($soa['status']); // boleh comment untuk disable watermark
 $pdf->DocumentInfo($soa);
 $pdf->ItemsTable($soa);
 $pdf->Totals($soa);
+$pdf->PaymentHistory($soa_payments);
 
 $pdf->Output('I', 'KSL_SOA_'.$soa['account_number'].'.pdf');
 ?>

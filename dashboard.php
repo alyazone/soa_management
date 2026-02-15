@@ -19,7 +19,7 @@ if($_SESSION["position"] != "Admin" && $_SESSION["position"] != "Manager"){
 }
 
 // Initialize defaults in case queries fail
-$client_soa_data = ['total_count' => 0, 'paid_count' => 0, 'pending_count' => 0, 'overdue_count' => 0, 'closed_count' => 0, 'total_revenue' => 0, 'paid_amount' => 0, 'pending_amount' => 0, 'overdue_amount' => 0];
+$client_soa_data = ['total_count' => 0, 'paid_count' => 0, 'pending_count' => 0, 'overdue_count' => 0, 'closed_count' => 0, 'total_revenue' => 0, 'paid_amount' => 0, 'pending_amount' => 0, 'overdue_amount' => 0, 'total_collected' => 0, 'total_outstanding' => 0];
 $supplier_soa_data = ['total_count' => 0, 'paid_count' => 0, 'pending_count' => 0, 'overdue_count' => 0, 'total_expenses' => 0, 'paid_amount' => 0, 'pending_amount' => 0, 'overdue_amount' => 0];
 $claims_data = ['total_count' => 0, 'pending_count' => 0, 'approved_count' => 0, 'rejected_count' => 0, 'total_claims' => 0, 'pending_amount' => 0, 'approved_amount' => 0, 'rejected_amount' => 0];
 $client_monthly = [];
@@ -45,7 +45,9 @@ try {
         SUM(total_amount) as total_revenue,
         SUM(CASE WHEN status = 'Paid' THEN total_amount ELSE 0 END) as paid_amount,
         SUM(CASE WHEN status = 'Pending' THEN total_amount ELSE 0 END) as pending_amount,
-        SUM(CASE WHEN status = 'Overdue' THEN total_amount ELSE 0 END) as overdue_amount
+        SUM(CASE WHEN status = 'Overdue' THEN total_amount ELSE 0 END) as overdue_amount,
+        COALESCE(SUM(paid_amount), 0) as total_collected,
+        COALESCE(SUM(total_amount - paid_amount), 0) as total_outstanding
         FROM client_soa");
     $client_soa_data = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -107,7 +109,7 @@ try {
     $supplier_count = $stmt->fetch()['supplier_count'];
 
     // Recent SOAs
-    $stmt = $pdo->query("SELECT cs.soa_id, cs.account_number, c.client_name, cs.issue_date, cs.total_amount, cs.status
+    $stmt = $pdo->query("SELECT cs.soa_id, cs.account_number, c.client_name, cs.issue_date, cs.total_amount, cs.paid_amount, (cs.total_amount - cs.paid_amount) as balance, cs.status
                          FROM client_soa cs
                          JOIN clients c ON cs.client_id = c.client_id
                          ORDER BY cs.created_at DESC LIMIT 5");
@@ -526,12 +528,12 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
                     </div>
                     <div class="card-footer-custom">
                         <div class="sub-metric">
-                            <div class="sub-label">Paid</div>
-                            <div class="sub-value">RM <?php echo number_format($client_soa_data['paid_amount'] ?? 0, 0); ?></div>
+                            <div class="sub-label">Collected</div>
+                            <div class="sub-value" style="color: #4caf50;">RM <?php echo number_format($client_soa_data['total_collected'] ?? 0, 0); ?></div>
                         </div>
                         <div class="sub-metric">
-                            <div class="sub-label">Pending</div>
-                            <div class="sub-value">RM <?php echo number_format($client_soa_data['pending_amount'] ?? 0, 0); ?></div>
+                            <div class="sub-label">Outstanding</div>
+                            <div class="sub-value" style="color: #f44336;">RM <?php echo number_format($client_soa_data['total_outstanding'] ?? 0, 0); ?></div>
                         </div>
                     </div>
                     <div class="progress-bars">
@@ -708,6 +710,7 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
                                 <th>Account #</th>
                                 <th>Client</th>
                                 <th>Amount</th>
+                                <th>Balance</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -718,6 +721,7 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
                                     <td><strong><?php echo htmlspecialchars($soa['account_number']); ?></strong></td>
                                     <td><?php echo htmlspecialchars($soa['client_name']); ?></td>
                                     <td>RM <?php echo number_format($soa['total_amount'], 2); ?></td>
+                                    <td style="<?php echo $soa['balance'] > 0 ? 'color:#f44336;font-weight:600;' : 'color:#4caf50;font-weight:600;'; ?>">RM <?php echo number_format($soa['balance'], 2); ?></td>
                                     <td>
                                         <span class="badge-custom badge-<?php echo strtolower($soa['status']); ?>">
                                             <?php echo htmlspecialchars($soa['status']); ?>
@@ -727,7 +731,7 @@ $claims_monthly_values = array_column($claims_monthly, 'count');
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4" style="text-align: center; color: #6e6e73;">No recent SOAs</td>
+                                    <td colspan="5" style="text-align: center; color: #6e6e73;">No recent SOAs</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
