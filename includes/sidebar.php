@@ -31,7 +31,12 @@
                     <i class="fas fa-truck mr-2"></i> Supplier Management
                 </a>
             </li>
-            
+            <li class="nav-item">
+                <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/purchase_orders/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/purchase_orders/index.php">
+                    <i class="fas fa-shopping-cart mr-2"></i> Purchase Order
+                </a>
+            </li>
+
             <!-- SOA Management Submenu -->
             <li class="nav-item">
                 <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? : ''; ?>" href="#" data-toggle="collapse" data-target="#soaSubmenu" aria-expanded="<?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'true' : 'false'; ?>">
