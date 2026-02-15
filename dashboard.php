@@ -18,6 +18,21 @@ if($_SESSION["position"] != "Admin" && $_SESSION["position"] != "Manager"){
     exit;
 }
 
+// Initialize defaults in case queries fail
+$client_soa_data = ['total_count' => 0, 'paid_count' => 0, 'pending_count' => 0, 'overdue_count' => 0, 'closed_count' => 0, 'total_revenue' => 0, 'paid_amount' => 0, 'pending_amount' => 0, 'overdue_amount' => 0];
+$supplier_soa_data = ['total_count' => 0, 'paid_count' => 0, 'pending_count' => 0, 'overdue_count' => 0, 'total_expenses' => 0, 'paid_amount' => 0, 'pending_amount' => 0, 'overdue_amount' => 0];
+$claims_data = ['total_count' => 0, 'pending_count' => 0, 'approved_count' => 0, 'rejected_count' => 0, 'total_claims' => 0, 'pending_amount' => 0, 'approved_amount' => 0, 'rejected_amount' => 0];
+$client_monthly = [];
+$claims_monthly = [];
+$client_count = 0;
+$supplier_count = 0;
+$recent_soas = [];
+$recent_claims = [];
+$total_revenue = 0;
+$total_expenses = 0;
+$net_balance = 0;
+$expense_efficiency = 0;
+
 // Fetch dynamic dashboard data
 try {
     // Client SOA Metrics
@@ -68,7 +83,7 @@ try {
         SUM(total_amount) as total
         FROM client_soa
         WHERE issue_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-        GROUP BY DATE_FORMAT(issue_date, '%Y-%m')
+        GROUP BY DATE_FORMAT(issue_date, '%Y-%m'), DATE_FORMAT(issue_date, '%b')
         ORDER BY month ASC");
     $client_monthly = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -80,7 +95,7 @@ try {
         SUM(amount) as total
         FROM claims
         WHERE submitted_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-        GROUP BY DATE_FORMAT(submitted_date, '%Y-%m')
+        GROUP BY DATE_FORMAT(submitted_date, '%Y-%m'), DATE_FORMAT(submitted_date, '%b')
         ORDER BY month ASC");
     $claims_monthly = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
