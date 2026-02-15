@@ -41,6 +41,12 @@
                     <span>Supplier Management</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/purchase_orders/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/purchase_orders/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Purchase Order</span>
+                </a>
+            </li>
             <li class="nav-item has-submenu">
                 <a href="#" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'active' : ''; ?>" data-toggle="submenu">
                     <i class="fas fa-file-invoice-dollar"></i>

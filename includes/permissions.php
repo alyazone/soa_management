@@ -13,12 +13,12 @@ function checkPermission($module) {
     // Define permissions for each position
     $permissions = [
         'Admin' => [
-            'dashboard', 'staff', 'clients', 'suppliers', 'soa', 'inventory', 
-            'documents', 'claims', 'excel'
+            'dashboard', 'staff', 'clients', 'suppliers', 'soa', 'inventory',
+            'documents', 'claims', 'excel', 'purchase_orders'
         ],
         'Manager' => [
-            'dashboard', 'clients', 'suppliers', 'soa', 'inventory', 
-            'documents', 'claims', 'excel'
+            'dashboard', 'clients', 'suppliers', 'soa', 'inventory',
+            'documents', 'claims', 'excel', 'purchase_orders'
         ],
         'Staff' => [
             'dashboard', 'documents', 'claims'
