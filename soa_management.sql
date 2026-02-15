@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.2.2
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Dec 27, 2025 at 04:35 PM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Host: localhost:3306
+-- Generation Time: Feb 15, 2026 at 09:14 AM
+-- Server version: 8.4.3
+-- PHP Version: 8.3.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -28,34 +28,34 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `claims` (
-  `claim_id` int(11) NOT NULL,
-  `staff_id` int(11) NOT NULL,
-  `claim_month` varchar(20) DEFAULT NULL,
-  `vehicle_type` varchar(50) DEFAULT NULL,
-  `description` text NOT NULL,
+  `claim_id` int NOT NULL,
+  `staff_id` int NOT NULL,
+  `claim_month` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `vehicle_type` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci NOT NULL,
   `travel_date` date DEFAULT NULL,
-  `travel_from` varchar(255) DEFAULT NULL,
-  `travel_to` varchar(255) DEFAULT NULL,
-  `purpose` varchar(255) DEFAULT NULL,
+  `travel_from` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `travel_to` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `purpose` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `parking_fee` decimal(10,2) DEFAULT NULL,
   `toll_fee` decimal(10,2) DEFAULT NULL,
   `miles_traveled` decimal(10,2) DEFAULT NULL,
   `km_rate` decimal(10,2) DEFAULT NULL,
   `total_km_amount` decimal(10,2) DEFAULT NULL,
-  `total_meal_amount` decimal(10,2) DEFAULT 0.00,
+  `total_meal_amount` decimal(10,2) DEFAULT '0.00',
   `amount` decimal(10,2) NOT NULL,
-  `employee_signature` tinyint(1) DEFAULT 0,
+  `employee_signature` tinyint(1) DEFAULT '0',
   `signature_date` date DEFAULT NULL,
-  `approval_signature` tinyint(1) DEFAULT 0,
+  `approval_signature` tinyint(1) DEFAULT '0',
   `approval_date` date DEFAULT NULL,
-  `status` enum('Pending','Approved','Rejected') DEFAULT 'Pending',
-  `submitted_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` enum('Pending','Approved','Rejected') COLLATE utf8mb4_general_ci DEFAULT 'Pending',
+  `submitted_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `processed_date` timestamp NULL DEFAULT NULL,
-  `processed_by` int(11) DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
-  `approved_by` varchar(100) DEFAULT NULL,
-  `rejection_reason` text DEFAULT NULL,
-  `payment_details` text DEFAULT NULL
+  `processed_by` int DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `approved_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `rejection_reason` text COLLATE utf8mb4_general_ci,
+  `payment_details` text COLLATE utf8mb4_general_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -78,13 +78,13 @@ INSERT INTO `claims` (`claim_id`, `staff_id`, `claim_month`, `vehicle_type`, `de
 --
 
 CREATE TABLE `claim_meal_entries` (
-  `meal_id` int(11) NOT NULL,
-  `claim_id` int(11) NOT NULL,
+  `meal_id` int NOT NULL,
+  `claim_id` int NOT NULL,
   `meal_date` date NOT NULL,
-  `meal_type` enum('Breakfast','Lunch','Dinner','Other') NOT NULL,
-  `description` varchar(255) NOT NULL,
-  `receipt_reference` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `meal_type` enum('Breakfast','Lunch','Dinner','Other') COLLATE utf8mb4_general_ci NOT NULL,
+  `description` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `receipt_reference` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -94,16 +94,16 @@ CREATE TABLE `claim_meal_entries` (
 --
 
 CREATE TABLE `claim_travel_entries` (
-  `entry_id` int(11) NOT NULL,
-  `claim_id` int(11) NOT NULL,
+  `entry_id` int NOT NULL,
+  `claim_id` int NOT NULL,
   `travel_date` date NOT NULL,
-  `travel_from` varchar(255) NOT NULL,
-  `travel_to` varchar(255) NOT NULL,
-  `purpose` varchar(255) NOT NULL,
-  `parking_fee` decimal(10,2) DEFAULT 0.00,
-  `toll_fee` decimal(10,2) DEFAULT 0.00,
-  `miles_traveled` decimal(10,2) DEFAULT 0.00,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `travel_from` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `travel_to` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `purpose` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `parking_fee` decimal(10,2) DEFAULT '0.00',
+  `toll_fee` decimal(10,2) DEFAULT '0.00',
+  `miles_traveled` decimal(10,2) DEFAULT '0.00',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -132,14 +132,14 @@ INSERT INTO `claim_travel_entries` (`entry_id`, `claim_id`, `travel_date`, `trav
 --
 
 CREATE TABLE `clients` (
-  `client_id` int(11) NOT NULL,
-  `client_name` varchar(100) NOT NULL,
-  `address` text NOT NULL,
-  `pic_name` varchar(100) NOT NULL,
-  `pic_contact` varchar(50) NOT NULL,
-  `pic_email` varchar(100) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `client_id` int NOT NULL,
+  `client_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `address` text COLLATE utf8mb4_general_ci NOT NULL,
+  `pic_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `pic_contact` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `pic_email` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -159,21 +159,21 @@ INSERT INTO `clients` (`client_id`, `client_name`, `address`, `pic_name`, `pic_c
 --
 
 CREATE TABLE `client_soa` (
-  `soa_id` int(11) NOT NULL,
-  `account_number` varchar(50) NOT NULL,
-  `client_id` int(11) NOT NULL,
-  `terms` varchar(50) NOT NULL,
+  `soa_id` int NOT NULL,
+  `account_number` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `client_id` int NOT NULL,
+  `terms` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
   `purchase_date` date DEFAULT NULL,
   `issue_date` date NOT NULL,
-  `po_number` varchar(50) DEFAULT NULL,
-  `invoice_number` varchar(50) DEFAULT NULL,
+  `po_number` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `invoice_number` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `due_date` date NOT NULL,
-  `service_description` text NOT NULL,
+  `service_description` text COLLATE utf8mb4_general_ci NOT NULL,
   `total_amount` decimal(10,2) NOT NULL,
-  `status` enum('Pending','Paid','Overdue','Closed') DEFAULT 'Pending',
-  `created_by` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `status` enum('Pending','Paid','Overdue','Closed') COLLATE utf8mb4_general_ci DEFAULT 'Pending',
+  `created_by` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -195,15 +195,15 @@ INSERT INTO `client_soa` (`soa_id`, `account_number`, `client_id`, `terms`, `pur
 --
 
 CREATE TABLE `documents` (
-  `document_id` int(11) NOT NULL,
-  `document_type` enum('Receipt','Invoice','Warranty','Claim') NOT NULL,
-  `reference_id` int(11) NOT NULL,
-  `reference_type` enum('Client','Supplier','Staff','SOA') NOT NULL,
-  `file_name` varchar(255) NOT NULL,
-  `file_path` varchar(255) NOT NULL,
-  `upload_date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `uploaded_by` int(11) NOT NULL,
-  `description` text DEFAULT NULL
+  `document_id` int NOT NULL,
+  `document_type` enum('Receipt','Invoice','Warranty','Claim') COLLATE utf8mb4_general_ci NOT NULL,
+  `reference_id` int NOT NULL,
+  `reference_type` enum('Client','Supplier','Staff','SOA') COLLATE utf8mb4_general_ci NOT NULL,
+  `file_name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `file_path` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `upload_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `uploaded_by` int NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -220,11 +220,11 @@ INSERT INTO `documents` (`document_id`, `document_type`, `reference_id`, `refere
 --
 
 CREATE TABLE `inventory_categories` (
-  `category_id` int(11) NOT NULL,
-  `category_name` varchar(100) NOT NULL,
-  `description` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `category_id` int NOT NULL,
+  `category_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -244,21 +244,21 @@ INSERT INTO `inventory_categories` (`category_id`, `category_name`, `description
 --
 
 CREATE TABLE `inventory_items` (
-  `item_id` int(11) NOT NULL,
-  `item_name` varchar(100) NOT NULL,
-  `category_id` int(11) DEFAULT NULL,
-  `supplier_id` int(11) DEFAULT NULL,
-  `serial_number` varchar(100) DEFAULT NULL,
-  `model_number` varchar(100) DEFAULT NULL,
+  `item_id` int NOT NULL,
+  `item_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `category_id` int DEFAULT NULL,
+  `supplier_id` int DEFAULT NULL,
+  `serial_number` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `model_number` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `purchase_date` date DEFAULT NULL,
   `purchase_price` decimal(10,2) DEFAULT NULL,
   `warranty_expiry` date DEFAULT NULL,
-  `status` enum('Available','Assigned','Maintenance','Disposed') DEFAULT 'Available',
-  `location` varchar(100) DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `status` enum('Available','Assigned','Maintenance','Disposed') COLLATE utf8mb4_general_ci DEFAULT 'Available',
+  `location` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_general_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -281,16 +281,16 @@ INSERT INTO `inventory_items` (`item_id`, `item_name`, `category_id`, `supplier_
 --
 
 CREATE TABLE `inventory_maintenance` (
-  `maintenance_id` int(11) NOT NULL,
-  `item_id` int(11) NOT NULL,
+  `maintenance_id` int NOT NULL,
+  `item_id` int NOT NULL,
   `maintenance_date` date NOT NULL,
-  `maintenance_type` varchar(100) NOT NULL,
-  `performed_by` varchar(100) DEFAULT NULL,
+  `maintenance_type` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `performed_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `cost` decimal(10,2) DEFAULT NULL,
-  `description` text DEFAULT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
   `next_maintenance_date` date DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -307,16 +307,16 @@ INSERT INTO `inventory_maintenance` (`maintenance_id`, `item_id`, `maintenance_d
 --
 
 CREATE TABLE `inventory_transactions` (
-  `transaction_id` int(11) NOT NULL,
-  `item_id` int(11) NOT NULL,
-  `transaction_type` enum('Purchase','Assignment','Return','Maintenance','Disposal') NOT NULL,
-  `quantity` int(11) DEFAULT 1,
-  `from_status` varchar(50) DEFAULT NULL,
-  `to_status` varchar(50) DEFAULT NULL,
-  `assigned_to` int(11) DEFAULT NULL,
-  `transaction_date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `notes` text DEFAULT NULL,
-  `performed_by` int(11) NOT NULL
+  `transaction_id` int NOT NULL,
+  `item_id` int NOT NULL,
+  `transaction_type` enum('Purchase','Assignment','Return','Maintenance','Disposal') COLLATE utf8mb4_general_ci NOT NULL,
+  `quantity` int DEFAULT '1',
+  `from_status` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `to_status` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `assigned_to` int DEFAULT NULL,
+  `transaction_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `notes` text COLLATE utf8mb4_general_ci,
+  `performed_by` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -345,12 +345,12 @@ INSERT INTO `inventory_transactions` (`transaction_id`, `item_id`, `transaction_
 --
 
 CREATE TABLE `mileage_rates` (
-  `rate_id` int(11) NOT NULL,
-  `vehicle_type` varchar(50) NOT NULL,
-  `km_threshold` int(11) NOT NULL,
+  `rate_id` int NOT NULL,
+  `vehicle_type` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `km_threshold` int NOT NULL,
   `rate_per_km` decimal(10,2) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -369,28 +369,28 @@ INSERT INTO `mileage_rates` (`rate_id`, `vehicle_type`, `km_threshold`, `rate_pe
 --
 
 CREATE TABLE `outstation_applications` (
-  `application_id` int(11) NOT NULL,
-  `application_number` varchar(50) NOT NULL,
-  `staff_id` int(11) NOT NULL,
-  `purpose` varchar(255) NOT NULL,
-  `purpose_details` text NOT NULL,
-  `destination` varchar(255) NOT NULL,
+  `application_id` int NOT NULL,
+  `application_number` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `staff_id` int NOT NULL,
+  `purpose` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `purpose_details` text COLLATE utf8mb4_general_ci NOT NULL,
+  `destination` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `departure_date` date NOT NULL,
   `departure_time` time DEFAULT NULL,
   `return_date` date NOT NULL,
   `return_time` time DEFAULT NULL,
-  `total_nights` int(11) NOT NULL DEFAULT 0,
-  `is_claimable` tinyint(1) NOT NULL DEFAULT 0,
-  `transportation_mode` varchar(100) NOT NULL,
-  `estimated_cost` decimal(10,2) DEFAULT 0.00,
-  `accommodation_details` text DEFAULT NULL,
-  `remarks` text DEFAULT NULL,
-  `status` enum('Pending','Approved','Rejected','Cancelled','Completed') NOT NULL DEFAULT 'Pending',
-  `approved_by` int(11) DEFAULT NULL,
+  `total_nights` int NOT NULL DEFAULT '0',
+  `is_claimable` tinyint(1) NOT NULL DEFAULT '0',
+  `transportation_mode` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `estimated_cost` decimal(10,2) DEFAULT '0.00',
+  `accommodation_details` text COLLATE utf8mb4_general_ci,
+  `remarks` text COLLATE utf8mb4_general_ci,
+  `status` enum('Pending','Approved','Rejected','Cancelled','Completed') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Pending',
+  `approved_by` int DEFAULT NULL,
   `approved_at` timestamp NULL DEFAULT NULL,
-  `rejection_reason` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `rejection_reason` text COLLATE utf8mb4_general_ci,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -408,19 +408,19 @@ INSERT INTO `outstation_applications` (`application_id`, `application_number`, `
 --
 
 CREATE TABLE `outstation_claims` (
-  `claim_id` int(11) NOT NULL,
-  `application_id` int(11) NOT NULL,
-  `staff_id` int(11) NOT NULL,
+  `claim_id` int NOT NULL,
+  `application_id` int NOT NULL,
+  `staff_id` int NOT NULL,
   `claim_date` date NOT NULL,
-  `claim_status` enum('Submitted','Approved','Rejected','Paid') NOT NULL DEFAULT 'Submitted',
-  `claim_amount` decimal(10,2) DEFAULT 0.00,
-  `actual_expenses` decimal(10,2) DEFAULT 0.00,
-  `supporting_documents` text DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `processed_by` int(11) DEFAULT NULL,
+  `claim_status` enum('Submitted','Approved','Rejected','Paid') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Submitted',
+  `claim_amount` decimal(10,2) DEFAULT '0.00',
+  `actual_expenses` decimal(10,2) DEFAULT '0.00',
+  `supporting_documents` text COLLATE utf8mb4_general_ci,
+  `notes` text COLLATE utf8mb4_general_ci,
+  `processed_by` int DEFAULT NULL,
   `processed_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -430,12 +430,12 @@ CREATE TABLE `outstation_claims` (
 --
 
 CREATE TABLE `outstation_settings` (
-  `setting_id` int(11) NOT NULL,
-  `setting_key` varchar(100) NOT NULL,
-  `setting_value` text NOT NULL,
-  `description` text DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `setting_id` int NOT NULL,
+  `setting_key` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `setting_value` text COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -451,25 +451,353 @@ INSERT INTO `outstation_settings` (`setting_id`, `setting_key`, `setting_value`,
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `pma__bookmark`
+--
+
+CREATE TABLE `pma__bookmark` (
+  `id` int UNSIGNED NOT NULL,
+  `dbase` varchar(255) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `user` varchar(255) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `label` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
+  `query` text COLLATE utf8mb3_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Bookmarks';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__central_columns`
+--
+
+CREATE TABLE `pma__central_columns` (
+  `db_name` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `col_name` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `col_type` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `col_length` text COLLATE utf8mb3_bin,
+  `col_collation` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `col_isNull` tinyint(1) NOT NULL,
+  `col_extra` varchar(255) COLLATE utf8mb3_bin DEFAULT '',
+  `col_default` text COLLATE utf8mb3_bin
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Central list of columns';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__column_info`
+--
+
+CREATE TABLE `pma__column_info` (
+  `id` int UNSIGNED NOT NULL,
+  `db_name` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `table_name` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `column_name` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `comment` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
+  `mimetype` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
+  `transformation` varchar(255) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `transformation_options` varchar(255) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `input_transformation` varchar(255) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `input_transformation_options` varchar(255) COLLATE utf8mb3_bin NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Column information for phpMyAdmin';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__designer_settings`
+--
+
+CREATE TABLE `pma__designer_settings` (
+  `username` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `settings_data` text COLLATE utf8mb3_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Settings related to Designer';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__export_templates`
+--
+
+CREATE TABLE `pma__export_templates` (
+  `id` int UNSIGNED NOT NULL,
+  `username` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `export_type` varchar(10) COLLATE utf8mb3_bin NOT NULL,
+  `template_name` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `template_data` text COLLATE utf8mb3_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Saved export templates';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__favorite`
+--
+
+CREATE TABLE `pma__favorite` (
+  `username` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `tables` text COLLATE utf8mb3_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Favorite tables';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__history`
+--
+
+CREATE TABLE `pma__history` (
+  `id` bigint UNSIGNED NOT NULL,
+  `username` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `db` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `table` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `timevalue` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `sqlquery` text COLLATE utf8mb3_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='SQL history for phpMyAdmin';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__navigationhiding`
+--
+
+CREATE TABLE `pma__navigationhiding` (
+  `username` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `item_name` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `item_type` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `db_name` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `table_name` varchar(64) COLLATE utf8mb3_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Hidden items of navigation tree';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__pdf_pages`
+--
+
+CREATE TABLE `pma__pdf_pages` (
+  `db_name` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `page_nr` int UNSIGNED NOT NULL,
+  `page_descr` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='PDF relation pages for phpMyAdmin';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__recent`
+--
+
+CREATE TABLE `pma__recent` (
+  `username` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `tables` text COLLATE utf8mb3_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Recently accessed tables';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__relation`
+--
+
+CREATE TABLE `pma__relation` (
+  `master_db` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `master_table` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `master_field` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `foreign_db` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `foreign_table` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `foreign_field` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Relation table';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__savedsearches`
+--
+
+CREATE TABLE `pma__savedsearches` (
+  `id` int UNSIGNED NOT NULL,
+  `username` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `db_name` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `search_name` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `search_data` text COLLATE utf8mb3_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Saved searches';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__table_coords`
+--
+
+CREATE TABLE `pma__table_coords` (
+  `db_name` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `table_name` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `pdf_page_number` int NOT NULL DEFAULT '0',
+  `x` float UNSIGNED NOT NULL DEFAULT '0',
+  `y` float UNSIGNED NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Table coordinates for phpMyAdmin PDF output';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__table_info`
+--
+
+CREATE TABLE `pma__table_info` (
+  `db_name` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `table_name` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `display_field` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Table information for phpMyAdmin';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__table_uiprefs`
+--
+
+CREATE TABLE `pma__table_uiprefs` (
+  `username` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `db_name` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `table_name` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `prefs` text COLLATE utf8mb3_bin NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Tables'' UI preferences';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__tracking`
+--
+
+CREATE TABLE `pma__tracking` (
+  `db_name` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `table_name` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `version` int UNSIGNED NOT NULL,
+  `date_created` datetime NOT NULL,
+  `date_updated` datetime NOT NULL,
+  `schema_snapshot` text COLLATE utf8mb3_bin NOT NULL,
+  `schema_sql` text COLLATE utf8mb3_bin,
+  `data_sql` longtext COLLATE utf8mb3_bin,
+  `tracking` set('UPDATE','REPLACE','INSERT','DELETE','TRUNCATE','CREATE DATABASE','ALTER DATABASE','DROP DATABASE','CREATE TABLE','ALTER TABLE','RENAME TABLE','DROP TABLE','CREATE INDEX','DROP INDEX','CREATE VIEW','ALTER VIEW','DROP VIEW') COLLATE utf8mb3_bin DEFAULT NULL,
+  `tracking_active` int UNSIGNED NOT NULL DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Database changes tracking for phpMyAdmin';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__userconfig`
+--
+
+CREATE TABLE `pma__userconfig` (
+  `username` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `timevalue` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `config_data` text COLLATE utf8mb3_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='User preferences storage for phpMyAdmin';
+
+--
+-- Dumping data for table `pma__userconfig`
+--
+
+INSERT INTO `pma__userconfig` (`username`, `timevalue`, `config_data`) VALUES
+('root', '2026-02-15 09:14:38', '{\"Console\\/Mode\":\"collapse\"}');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__usergroups`
+--
+
+CREATE TABLE `pma__usergroups` (
+  `usergroup` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `tab` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `allowed` enum('Y','N') COLLATE utf8mb3_bin NOT NULL DEFAULT 'N'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='User groups with configured menu items';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pma__users`
+--
+
+CREATE TABLE `pma__users` (
+  `username` varchar(64) COLLATE utf8mb3_bin NOT NULL,
+  `usergroup` varchar(64) COLLATE utf8mb3_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Users and their assignments to user groups';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `purchase_orders`
+--
+
+CREATE TABLE `purchase_orders` (
+  `po_id` int NOT NULL,
+  `po_number` varchar(50) NOT NULL,
+  `supplier_id` int NOT NULL,
+  `order_date` date NOT NULL,
+  `expected_delivery_date` date DEFAULT NULL,
+  `status` enum('Draft','Approved','Received','Cancelled') DEFAULT 'Draft',
+  `subtotal` decimal(12,2) DEFAULT '0.00',
+  `tax_amount` decimal(12,2) DEFAULT '0.00',
+  `total_amount` decimal(12,2) DEFAULT '0.00',
+  `notes` text,
+  `approved_by` int DEFAULT NULL,
+  `approved_date` datetime DEFAULT NULL,
+  `supplier_invoice_number` varchar(100) DEFAULT NULL,
+  `supplier_invoice_date` date DEFAULT NULL,
+  `created_by` int NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `purchase_orders`
+--
+
+INSERT INTO `purchase_orders` (`po_id`, `po_number`, `supplier_id`, `order_date`, `expected_delivery_date`, `status`, `subtotal`, `tax_amount`, `total_amount`, `notes`, `approved_by`, `approved_date`, `supplier_invoice_number`, `supplier_invoice_date`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 'PO-2026-00001', 4, '2026-02-15', '2026-02-15', 'Approved', 1160.00, 0.00, 1160.00, 'testimg', 3, '2026-02-15 11:25:05', 'INV-203-001', '2026-02-15', 3, '2026-02-15 03:24:09', '2026-02-15 03:25:42'),
+(2, 'PO-2026-00002', 2, '2026-02-15', '2026-02-19', 'Approved', 2000.00, 0.00, 2000.00, '', 3, '2026-02-15 11:28:48', '395', '2017-06-30', 3, '2026-02-15 03:28:29', '2026-02-15 03:29:37');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `purchase_order_items`
+--
+
+CREATE TABLE `purchase_order_items` (
+  `item_id` int NOT NULL,
+  `po_id` int NOT NULL,
+  `description` varchar(500) NOT NULL,
+  `quantity` decimal(10,2) NOT NULL DEFAULT '1.00',
+  `unit_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `purchase_order_items`
+--
+
+INSERT INTO `purchase_order_items` (`item_id`, `po_id`, `description`, `quantity`, `unit_price`, `total_price`, `created_at`) VALUES
+(1, 1, 'TESTING', 1.00, 100.00, 100.00, '2026-02-15 03:24:09'),
+(2, 1, 'TESTING 2', 1.00, 500.00, 500.00, '2026-02-15 03:24:09'),
+(3, 1, 'TESTING 3', 1.00, 560.00, 560.00, '2026-02-15 03:24:09'),
+(5, 2, 'TESTING', 1.00, 2000.00, 2000.00, '2026-02-15 03:28:45');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `soa`
 --
 
 CREATE TABLE `soa` (
-  `soa_id` int(11) NOT NULL,
-  `account_number` varchar(50) NOT NULL,
-  `client_id` int(11) NOT NULL,
-  `supplier_id` int(11) NOT NULL,
-  `terms` varchar(50) NOT NULL,
+  `soa_id` int NOT NULL,
+  `account_number` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `client_id` int NOT NULL,
+  `supplier_id` int NOT NULL,
+  `terms` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
   `purchase_date` date NOT NULL,
   `issue_date` date NOT NULL,
-  `po_number` varchar(50) NOT NULL,
-  `invoice_number` varchar(50) NOT NULL,
-  `description` text NOT NULL,
+  `po_number` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `invoice_number` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci NOT NULL,
   `balance_amount` decimal(10,2) NOT NULL,
-  `status` enum('Pending','Paid','Overdue') DEFAULT 'Pending',
-  `created_by` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `status` enum('Pending','Paid','Overdue') COLLATE utf8mb4_general_ci DEFAULT 'Pending',
+  `created_by` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -489,15 +817,15 @@ INSERT INTO `soa` (`soa_id`, `account_number`, `client_id`, `supplier_id`, `term
 --
 
 CREATE TABLE `staff` (
-  `staff_id` int(11) NOT NULL,
-  `username` varchar(50) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `full_name` varchar(100) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `department` varchar(50) NOT NULL,
-  `position` varchar(50) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `staff_id` int NOT NULL,
+  `username` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `password` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `full_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `department` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `position` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -519,14 +847,14 @@ INSERT INTO `staff` (`staff_id`, `username`, `password`, `full_name`, `email`, `
 --
 
 CREATE TABLE `suppliers` (
-  `supplier_id` int(11) NOT NULL,
-  `supplier_name` varchar(100) NOT NULL,
-  `address` text NOT NULL,
-  `pic_name` varchar(100) NOT NULL,
-  `pic_contact` varchar(50) NOT NULL,
-  `pic_email` varchar(100) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `supplier_id` int NOT NULL,
+  `supplier_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `address` text COLLATE utf8mb4_general_ci NOT NULL,
+  `pic_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `pic_contact` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `pic_email` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -545,18 +873,18 @@ INSERT INTO `suppliers` (`supplier_id`, `supplier_name`, `address`, `pic_name`, 
 --
 
 CREATE TABLE `supplier_soa` (
-  `soa_id` int(11) NOT NULL,
-  `invoice_number` varchar(50) NOT NULL,
-  `supplier_id` int(11) NOT NULL,
+  `soa_id` int NOT NULL,
+  `invoice_number` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `supplier_id` int NOT NULL,
   `issue_date` date NOT NULL,
   `payment_due_date` date NOT NULL,
-  `purchase_description` text NOT NULL,
+  `purchase_description` text COLLATE utf8mb4_general_ci NOT NULL,
   `amount` decimal(10,2) NOT NULL,
-  `payment_status` enum('Pending','Paid','Overdue') DEFAULT 'Pending',
-  `payment_method` varchar(50) DEFAULT NULL,
-  `created_by` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `payment_status` enum('Pending','Paid','Overdue') COLLATE utf8mb4_general_ci DEFAULT 'Pending',
+  `payment_method` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `created_by` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -685,6 +1013,143 @@ ALTER TABLE `outstation_settings`
   ADD UNIQUE KEY `setting_key` (`setting_key`);
 
 --
+-- Indexes for table `pma__bookmark`
+--
+ALTER TABLE `pma__bookmark`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `pma__central_columns`
+--
+ALTER TABLE `pma__central_columns`
+  ADD PRIMARY KEY (`db_name`,`col_name`);
+
+--
+-- Indexes for table `pma__column_info`
+--
+ALTER TABLE `pma__column_info`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `db_name` (`db_name`,`table_name`,`column_name`);
+
+--
+-- Indexes for table `pma__designer_settings`
+--
+ALTER TABLE `pma__designer_settings`
+  ADD PRIMARY KEY (`username`);
+
+--
+-- Indexes for table `pma__export_templates`
+--
+ALTER TABLE `pma__export_templates`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `u_user_type_template` (`username`,`export_type`,`template_name`);
+
+--
+-- Indexes for table `pma__favorite`
+--
+ALTER TABLE `pma__favorite`
+  ADD PRIMARY KEY (`username`);
+
+--
+-- Indexes for table `pma__history`
+--
+ALTER TABLE `pma__history`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `username` (`username`,`db`,`table`,`timevalue`);
+
+--
+-- Indexes for table `pma__navigationhiding`
+--
+ALTER TABLE `pma__navigationhiding`
+  ADD PRIMARY KEY (`username`,`item_name`,`item_type`,`db_name`,`table_name`);
+
+--
+-- Indexes for table `pma__pdf_pages`
+--
+ALTER TABLE `pma__pdf_pages`
+  ADD PRIMARY KEY (`page_nr`),
+  ADD KEY `db_name` (`db_name`);
+
+--
+-- Indexes for table `pma__recent`
+--
+ALTER TABLE `pma__recent`
+  ADD PRIMARY KEY (`username`);
+
+--
+-- Indexes for table `pma__relation`
+--
+ALTER TABLE `pma__relation`
+  ADD PRIMARY KEY (`master_db`,`master_table`,`master_field`),
+  ADD KEY `foreign_field` (`foreign_db`,`foreign_table`);
+
+--
+-- Indexes for table `pma__savedsearches`
+--
+ALTER TABLE `pma__savedsearches`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `u_savedsearches_username_dbname` (`username`,`db_name`,`search_name`);
+
+--
+-- Indexes for table `pma__table_coords`
+--
+ALTER TABLE `pma__table_coords`
+  ADD PRIMARY KEY (`db_name`,`table_name`,`pdf_page_number`);
+
+--
+-- Indexes for table `pma__table_info`
+--
+ALTER TABLE `pma__table_info`
+  ADD PRIMARY KEY (`db_name`,`table_name`);
+
+--
+-- Indexes for table `pma__table_uiprefs`
+--
+ALTER TABLE `pma__table_uiprefs`
+  ADD PRIMARY KEY (`username`,`db_name`,`table_name`);
+
+--
+-- Indexes for table `pma__tracking`
+--
+ALTER TABLE `pma__tracking`
+  ADD PRIMARY KEY (`db_name`,`table_name`,`version`);
+
+--
+-- Indexes for table `pma__userconfig`
+--
+ALTER TABLE `pma__userconfig`
+  ADD PRIMARY KEY (`username`);
+
+--
+-- Indexes for table `pma__usergroups`
+--
+ALTER TABLE `pma__usergroups`
+  ADD PRIMARY KEY (`usergroup`,`tab`,`allowed`);
+
+--
+-- Indexes for table `pma__users`
+--
+ALTER TABLE `pma__users`
+  ADD PRIMARY KEY (`username`,`usergroup`);
+
+--
+-- Indexes for table `purchase_orders`
+--
+ALTER TABLE `purchase_orders`
+  ADD PRIMARY KEY (`po_id`),
+  ADD UNIQUE KEY `po_number` (`po_number`),
+  ADD KEY `supplier_id` (`supplier_id`),
+  ADD KEY `created_by` (`created_by`),
+  ADD KEY `approved_by` (`approved_by`);
+
+--
+-- Indexes for table `purchase_order_items`
+--
+ALTER TABLE `purchase_order_items`
+  ADD PRIMARY KEY (`item_id`),
+  ADD KEY `po_id` (`po_id`);
+
+--
 -- Indexes for table `soa`
 --
 ALTER TABLE `soa`
@@ -723,109 +1188,157 @@ ALTER TABLE `supplier_soa`
 -- AUTO_INCREMENT for table `claims`
 --
 ALTER TABLE `claims`
-  MODIFY `claim_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `claim_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `claim_meal_entries`
 --
 ALTER TABLE `claim_meal_entries`
-  MODIFY `meal_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `meal_id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `claim_travel_entries`
 --
 ALTER TABLE `claim_travel_entries`
-  MODIFY `entry_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `entry_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `clients`
 --
 ALTER TABLE `clients`
-  MODIFY `client_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `client_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `client_soa`
 --
 ALTER TABLE `client_soa`
-  MODIFY `soa_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `soa_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `documents`
 --
 ALTER TABLE `documents`
-  MODIFY `document_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `document_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `inventory_categories`
 --
 ALTER TABLE `inventory_categories`
-  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `category_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `inventory_items`
 --
 ALTER TABLE `inventory_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `item_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `inventory_maintenance`
 --
 ALTER TABLE `inventory_maintenance`
-  MODIFY `maintenance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `maintenance_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `inventory_transactions`
 --
 ALTER TABLE `inventory_transactions`
-  MODIFY `transaction_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `transaction_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `mileage_rates`
 --
 ALTER TABLE `mileage_rates`
-  MODIFY `rate_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `rate_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `outstation_applications`
 --
 ALTER TABLE `outstation_applications`
-  MODIFY `application_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `application_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `outstation_claims`
 --
 ALTER TABLE `outstation_claims`
-  MODIFY `claim_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `claim_id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `outstation_settings`
 --
 ALTER TABLE `outstation_settings`
-  MODIFY `setting_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `setting_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `pma__bookmark`
+--
+ALTER TABLE `pma__bookmark`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `pma__column_info`
+--
+ALTER TABLE `pma__column_info`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `pma__export_templates`
+--
+ALTER TABLE `pma__export_templates`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `pma__history`
+--
+ALTER TABLE `pma__history`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `pma__pdf_pages`
+--
+ALTER TABLE `pma__pdf_pages`
+  MODIFY `page_nr` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `pma__savedsearches`
+--
+ALTER TABLE `pma__savedsearches`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `purchase_orders`
+--
+ALTER TABLE `purchase_orders`
+  MODIFY `po_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `purchase_order_items`
+--
+ALTER TABLE `purchase_order_items`
+  MODIFY `item_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `soa`
 --
 ALTER TABLE `soa`
-  MODIFY `soa_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `soa_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `staff`
 --
 ALTER TABLE `staff`
-  MODIFY `staff_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `staff_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `suppliers`
 --
 ALTER TABLE `suppliers`
-  MODIFY `supplier_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `supplier_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `supplier_soa`
 --
 ALTER TABLE `supplier_soa`
-  MODIFY `soa_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `soa_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Constraints for dumped tables
@@ -900,6 +1413,20 @@ ALTER TABLE `outstation_claims`
   ADD CONSTRAINT `fk_claim_application` FOREIGN KEY (`application_id`) REFERENCES `outstation_applications` (`application_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_claim_processor` FOREIGN KEY (`processed_by`) REFERENCES `staff` (`staff_id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_claim_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `purchase_orders`
+--
+ALTER TABLE `purchase_orders`
+  ADD CONSTRAINT `purchase_orders_ibfk_1` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`supplier_id`),
+  ADD CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `staff` (`staff_id`),
+  ADD CONSTRAINT `purchase_orders_ibfk_3` FOREIGN KEY (`approved_by`) REFERENCES `staff` (`staff_id`);
+
+--
+-- Constraints for table `purchase_order_items`
+--
+ALTER TABLE `purchase_order_items`
+  ADD CONSTRAINT `purchase_order_items_ibfk_1` FOREIGN KEY (`po_id`) REFERENCES `purchase_orders` (`po_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `soa`
