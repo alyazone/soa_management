@@ -20,6 +20,33 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
+// Auto-migrate: ensure supplier_soa has po_id column
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM supplier_soa LIKE 'po_id'")->fetchAll();
+    if(count($cols) === 0){
+        $pdo->exec("ALTER TABLE supplier_soa ADD COLUMN po_id INT NULL AFTER supplier_id");
+        // Only add FK if purchase_orders table exists
+        try {
+            $pdo->query("SELECT 1 FROM purchase_orders LIMIT 1");
+            $pdo->exec("ALTER TABLE supplier_soa ADD FOREIGN KEY (po_id) REFERENCES purchase_orders(po_id) ON DELETE SET NULL");
+        } catch(PDOException $e) {
+            // purchase_orders table doesn't exist yet, skip FK
+        }
+    }
+} catch(PDOException $e) {
+    // supplier_soa table might not exist, ignore
+}
+
+// Auto-migrate: ensure purchase_orders status ENUM includes new statuses
+try {
+    $col = $pdo->query("SHOW COLUMNS FROM purchase_orders LIKE 'status'")->fetch(PDO::FETCH_ASSOC);
+    if($col && strpos($col['Type'], 'Partially Invoiced') === false){
+        $pdo->exec("ALTER TABLE purchase_orders MODIFY COLUMN status ENUM('Draft','Approved','Partially Invoiced','Closed','Received','Cancelled') DEFAULT 'Draft'");
+    }
+} catch(PDOException $e) {
+    // ignore if purchase_orders doesn't exist
+}
+
 if($action === 'list_pos'){
     // Return approved / partially invoiced POs for a given supplier
     $supplier_id = isset($_GET['supplier_id']) ? intval($_GET['supplier_id']) : 0;
@@ -35,7 +62,7 @@ if($action === 'list_pos'){
                 LEFT JOIN supplier_soa ss ON ss.po_id = po.po_id
                 WHERE po.supplier_id = :supplier_id
                   AND po.status IN ('Approved', 'Partially Invoiced')
-                GROUP BY po.po_id
+                GROUP BY po.po_id, po.po_number, po.total_amount, po.status
                 ORDER BY po.order_date DESC";
 
         $stmt = $pdo->prepare($sql);
@@ -60,7 +87,7 @@ if($action === 'list_pos'){
         echo json_encode($result);
     } catch(PDOException $e) {
         http_response_code(500);
-        echo json_encode(['error' => 'Database error']);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }
     exit;
 }
@@ -122,7 +149,7 @@ if($action === 'po_details'){
         ]);
     } catch(PDOException $e) {
         http_response_code(500);
-        echo json_encode(['error' => 'Database error']);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }
     exit;
 }

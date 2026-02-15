@@ -9,6 +9,18 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION[
     exit;
 }
 
+// Auto-migrate: ensure supplier_soa has po_id column
+try {
+    $cols = $pdo->query("SHOW COLUMNS FROM supplier_soa LIKE 'po_id'")->fetchAll();
+    if(count($cols) === 0){
+        $pdo->exec("ALTER TABLE supplier_soa ADD COLUMN po_id INT NULL AFTER supplier_id");
+        try {
+            $pdo->query("SELECT 1 FROM purchase_orders LIMIT 1");
+            $pdo->exec("ALTER TABLE supplier_soa ADD FOREIGN KEY (po_id) REFERENCES purchase_orders(po_id) ON DELETE SET NULL");
+        } catch(PDOException $e) {}
+    }
+} catch(PDOException $e) {}
+
 $errors = [];
 $form_data = [
     'invoice_number' => '', 'supplier_id' => '', 'po_id' => '', 'issue_date' => date('Y-m-d'),
@@ -330,8 +342,15 @@ try {
             if (!supplierId) return;
 
             fetch('get_po_data.php?action=list_pos&supplier_id=' + encodeURIComponent(supplierId))
-                .then(r => r.json())
+                .then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(data => {
+                    if (data && data.error) {
+                        console.error('PO list error:', data.error);
+                        return;
+                    }
                     if (Array.isArray(data) && data.length > 0) {
                         data.forEach(po => {
                             const opt = document.createElement('option');
@@ -343,7 +362,7 @@ try {
                         });
                     }
                 })
-                .catch(() => {});
+                .catch(err => console.error('Failed to load POs:', err));
         });
 
         // When PO changes → fetch details & auto-fill
@@ -357,9 +376,12 @@ try {
             }
 
             fetch('get_po_data.php?action=po_details&po_id=' + encodeURIComponent(poId))
-                .then(r => r.json())
+                .then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(data => {
-                    if (data.error) { hidePoInfo(); return; }
+                    if (data.error) { console.error('PO details error:', data.error); hidePoInfo(); return; }
 
                     // Show PO balance info card
                     document.getElementById('poTotalAmount').textContent     = 'RM ' + formatNumber(data.total_amount);
@@ -381,7 +403,7 @@ try {
                     // Lock supplier
                     lockSupplier(data.supplier_id);
                 })
-                .catch(() => {});
+                .catch(err => console.error('Failed to load PO details:', err));
         });
 
         function resetPoDropdown() {
