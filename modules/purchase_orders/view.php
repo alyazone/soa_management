@@ -117,7 +117,9 @@ try {
                 <div class="profile-avatar" style="background-color: <?php
                     echo $po['status'] == 'Draft' ? '#f59e0b' :
                         ($po['status'] == 'Approved' ? '#10b981' :
-                        ($po['status'] == 'Received' ? '#3b82f6' : '#ef4444'));
+                        ($po['status'] == 'Partially Invoiced' ? '#7c3aed' :
+                        ($po['status'] == 'Closed' ? '#6b7280' :
+                        ($po['status'] == 'Received' ? '#3b82f6' : '#ef4444'))));
                 ?>;">
                     <i class="fas fa-file-alt"></i>
                 </div>
@@ -127,7 +129,7 @@ try {
                     <div class="profile-meta">
                         <span class="meta-item"><i class="fas fa-calendar"></i> <?php echo date('M d, Y', strtotime($po['order_date'])); ?></span>
                         <span class="meta-item">
-                            <span class="status-badge status-<?php echo strtolower($po['status']); ?>"><?php echo htmlspecialchars($po['status']); ?></span>
+                            <span class="status-badge status-<?php echo strtolower(str_replace(' ', '-', $po['status'])); ?>"><?php echo htmlspecialchars($po['status']); ?></span>
                         </span>
                         <span class="meta-item"><i class="fas fa-dollar-sign"></i> RM <?php echo number_format($po['total_amount'], 2); ?></span>
                     </div>
@@ -171,7 +173,7 @@ try {
                             </div>
                             <div class="info-item">
                                 <label>Status</label>
-                                <value><span class="status-badge status-<?php echo strtolower($po['status']); ?>"><?php echo htmlspecialchars($po['status']); ?></span></value>
+                                <value><span class="status-badge status-<?php echo strtolower(str_replace(' ', '-', $po['status'])); ?>"><?php echo htmlspecialchars($po['status']); ?></span></value>
                             </div>
                             <div class="info-item">
                                 <label>Order Date</label>
@@ -342,6 +344,8 @@ try {
         .status-approved{background:rgba(16,185,129,.1);color:var(--success-color)}
         .status-received{background:rgba(59,130,246,.1);color:var(--primary-color)}
         .status-cancelled{background:rgba(239,68,68,.1);color:var(--danger-color)}
+        .status-partially-invoiced{background:rgba(139,92,246,.1);color:#7c3aed}
+        .status-closed{background:rgba(107,114,128,.1);color:var(--secondary-color)}
         .invoice-linked{display:inline-flex;align-items:center;gap:.375rem;color:var(--primary-color);font-weight:500}
         .subtotal-row td{border-top:2px solid var(--gray-200)!important}
         .grand-total-row td{border-top:2px solid var(--gray-300)!important}

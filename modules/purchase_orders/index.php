@@ -22,7 +22,7 @@ $supplier_filter = isset($_GET['supplier_id']) ? intval($_GET['supplier_id']) : 
 $where_clauses = [];
 $params = [];
 
-if(!empty($status_filter) && in_array($status_filter, ['Draft', 'Approved', 'Received', 'Cancelled'])){
+if(!empty($status_filter) && in_array($status_filter, ['Draft', 'Approved', 'Partially Invoiced', 'Closed', 'Received', 'Cancelled'])){
     $where_clauses[] = "po.status = :status";
     $params[':status'] = $status_filter;
 }
@@ -183,6 +183,8 @@ foreach($purchase_orders as $po){
                             <option value="">All Statuses</option>
                             <option value="Draft" <?php echo $status_filter == 'Draft' ? 'selected' : ''; ?>>Draft</option>
                             <option value="Approved" <?php echo $status_filter == 'Approved' ? 'selected' : ''; ?>>Approved</option>
+                            <option value="Partially Invoiced" <?php echo $status_filter == 'Partially Invoiced' ? 'selected' : ''; ?>>Partially Invoiced</option>
+                            <option value="Closed" <?php echo $status_filter == 'Closed' ? 'selected' : ''; ?>>Closed</option>
                             <option value="Received" <?php echo $status_filter == 'Received' ? 'selected' : ''; ?>>Received</option>
                             <option value="Cancelled" <?php echo $status_filter == 'Cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                         </select>
@@ -248,7 +250,7 @@ foreach($purchase_orders as $po){
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="status-badge status-<?php echo strtolower($po['status']); ?>">
+                                        <span class="status-badge status-<?php echo strtolower(str_replace(' ', '-', $po['status'])); ?>">
                                             <?php echo htmlspecialchars($po['status']); ?>
                                         </span>
                                     </td>
@@ -349,6 +351,8 @@ foreach($purchase_orders as $po){
         .status-badge{display:inline-flex;align-items:center;padding:.375rem .75rem;border-radius:9999px;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
         .status-draft{background:rgba(245,158,11,.1);color:var(--warning-color)}
         .status-approved{background:rgba(16,185,129,.1);color:var(--success-color)}
+        .status-partially-invoiced{background:rgba(139,92,246,.1);color:#7c3aed}
+        .status-closed{background:rgba(107,114,128,.1);color:var(--secondary-color)}
         .status-received{background:rgba(59,130,246,.1);color:var(--primary-color)}
         .status-cancelled{background:rgba(239,68,68,.1);color:var(--danger-color)}
         .invoice-linked{display:inline-flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--primary-color);font-weight:500}

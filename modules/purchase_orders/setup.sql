@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     supplier_id INT NOT NULL,
     order_date DATE NOT NULL,
     expected_delivery_date DATE,
-    status ENUM('Draft', 'Approved', 'Received', 'Cancelled') DEFAULT 'Draft',
+    status ENUM('Draft', 'Approved', 'Partially Invoiced', 'Closed', 'Received', 'Cancelled') DEFAULT 'Draft',
     subtotal DECIMAL(12,2) DEFAULT 0.00,
     tax_amount DECIMAL(12,2) DEFAULT 0.00,
     total_amount DECIMAL(12,2) DEFAULT 0.00,
@@ -34,3 +34,10 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (po_id) REFERENCES purchase_orders(po_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Migration: Add po_id reference to supplier_soa table
+ALTER TABLE supplier_soa ADD COLUMN po_id INT NULL AFTER supplier_id;
+ALTER TABLE supplier_soa ADD FOREIGN KEY (po_id) REFERENCES purchase_orders(po_id) ON DELETE SET NULL;
+
+-- Migration: Add new PO statuses (run if table was created with old ENUM)
+-- ALTER TABLE purchase_orders MODIFY COLUMN status ENUM('Draft', 'Approved', 'Partially Invoiced', 'Closed', 'Received', 'Cancelled') DEFAULT 'Draft';
