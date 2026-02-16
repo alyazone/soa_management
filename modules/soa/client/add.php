@@ -11,10 +11,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION[
 
 $errors = [];
 $form_data = [
-    'account_number' => '', 'client_id' => '', 'terms' => 'Net 30 Days', 
+    'account_number' => '', 'client_id' => '', 'terms' => 'Net 30 Days',
     'purchase_date' => date('Y-m-d'), 'issue_date' => date('Y-m-d'), 'due_date' => date('Y-m-d', strtotime('+30 days')),
-    'po_number' => '', 'invoice_number' => '', 'service_description' => '', 
-    'total_amount' => '', 'status' => 'Pending'
+    'po_number' => '', 'invoice_number' => '', 'service_description' => '',
+    'total_amount' => '', 'status' => 'Pending', 'category_id' => ''
 ];
 
 $preselected_client = isset($_GET['client_id']) ? $_GET['client_id'] : '';
@@ -43,13 +43,14 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     if(empty($status)) $errors['status'] = "Status is required.";
 
     if(empty($errors)){
-        $sql = "INSERT INTO client_soa (account_number, client_id, terms, purchase_date, issue_date, due_date, po_number, invoice_number, service_description, total_amount, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO client_soa (account_number, client_id, terms, purchase_date, issue_date, due_date, po_number, invoice_number, service_description, category_id, total_amount, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         if($stmt = $pdo->prepare($sql)){
             $created_by = $_SESSION["staff_id"];
+            $category_id = !empty($form_data['category_id']) ? $form_data['category_id'] : null;
             $stmt->execute([
-                $account_number, $client_id, trim($form_data['terms']), $form_data['purchase_date'], 
-                $issue_date, $due_date, trim($form_data['po_number']), trim($form_data['invoice_number']), 
-                trim($form_data['service_description']), $total_amount, $status, $created_by
+                $account_number, $client_id, trim($form_data['terms']), $form_data['purchase_date'],
+                $issue_date, $due_date, trim($form_data['po_number']), trim($form_data['invoice_number']),
+                trim($form_data['service_description']), $category_id, $total_amount, $status, $created_by
             ]);
             $last_id = $pdo->lastInsertId();
             header("location: view.php?id=" . $last_id . "&success=added");
@@ -62,9 +63,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
 try {
     $clients = $pdo->query("SELECT client_id, client_name FROM clients ORDER BY client_name")->fetchAll();
+    $categories = $pdo->query("SELECT category_id, category_name FROM experience_categories ORDER BY category_name")->fetchAll();
 } catch(PDOException $e) {
     $db_error = "Could not fetch clients.";
     $clients = [];
+    $categories = [];
 }
 ?>
 
@@ -184,7 +187,22 @@ try {
 
                         <div class="form-section">
                             <div class="section-header"><h4><i class="fas fa-align-left"></i> Service Description</h4></div>
-                            <div class="form-group full-width">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-tag"></i> Service Category</label>
+                                    <select name="category_id" class="form-input">
+                                        <option value="">-- No Category --</option>
+                                        <?php foreach($categories as $cat): ?>
+                                            <option value="<?php echo $cat['category_id']; ?>" <?php echo ($cat['category_id'] == $form_data['category_id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($cat['category_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">&nbsp;</div>
+                            </div>
+                            <div class="form-group full-width" style="margin-top:1rem;">
+                                <label class="form-label"><i class="fas fa-align-left"></i> Description</label>
                                 <textarea name="service_description" class="form-textarea" rows="4" placeholder="Enter service or product details..."><?php echo htmlspecialchars($form_data['service_description']); ?></textarea>
                             </div>
                         </div>

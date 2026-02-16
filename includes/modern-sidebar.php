@@ -113,6 +113,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/experience/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/experience/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Pengalaman Syarikat</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/documents/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/documents/') !== false) ? 'active' : ''; ?>">
                     <i class="fas fa-file-upload"></i>
                     <span>Document Upload</span>
