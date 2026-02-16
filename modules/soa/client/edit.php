@@ -21,10 +21,12 @@ try {
     if(!$soa) { header("location: index.php"); exit; }
     
     $clients = $pdo->query("SELECT client_id, client_name FROM clients ORDER BY client_name")->fetchAll();
+    $categories = $pdo->query("SELECT category_id, category_name FROM experience_categories ORDER BY category_name")->fetchAll();
 } catch(PDOException $e) {
     $db_error = "Database error during initial load.";
-    $soa = []; // Prevent errors on form if fetch fails
+    $soa = [];
     $clients = [];
+    $categories = [];
 }
 
 
@@ -39,6 +41,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $po_number = trim($_POST['po_number']);
     $invoice_number = trim($_POST['invoice_number']);
     $service_description = trim($_POST['service_description']);
+    $category_id = !empty($_POST['category_id']) ? $_POST['category_id'] : null;
     $total_amount = filter_var($_POST['total_amount'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
     $status = $_POST['status'];
 
@@ -51,9 +54,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     if(empty($status)) $errors['status'] = "Status is required.";
 
     if(empty($errors)){
-        $sql = "UPDATE client_soa SET account_number = ?, client_id = ?, terms = ?, purchase_date = ?, issue_date = ?, due_date = ?, po_number = ?, invoice_number = ?, service_description = ?, total_amount = ?, status = ? WHERE soa_id = ?";
+        $sql = "UPDATE client_soa SET account_number = ?, client_id = ?, terms = ?, purchase_date = ?, issue_date = ?, due_date = ?, po_number = ?, invoice_number = ?, service_description = ?, category_id = ?, total_amount = ?, status = ? WHERE soa_id = ?";
         if($stmt = $pdo->prepare($sql)){
-            $stmt->execute([$account_number, $client_id, $terms, $purchase_date, $issue_date, $due_date, $po_number, $invoice_number, $service_description, $total_amount, $status, $soa_id]);
+            $stmt->execute([$account_number, $client_id, $terms, $purchase_date, $issue_date, $due_date, $po_number, $invoice_number, $service_description, $category_id, $total_amount, $status, $soa_id]);
             header("location: view.php?id=" . $soa_id . "&success=updated");
             exit();
         } else {
@@ -195,7 +198,22 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
                         <div class="form-section">
                             <div class="section-header"><h4><i class="fas fa-align-left"></i> Service Description</h4></div>
-                            <div class="form-group full-width">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-tag"></i> Service Category</label>
+                                    <select name="category_id" class="form-input">
+                                        <option value="">-- No Category --</option>
+                                        <?php foreach($categories as $cat): ?>
+                                            <option value="<?php echo $cat['category_id']; ?>" <?php echo (isset($soa['category_id']) && $cat['category_id'] == $soa['category_id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($cat['category_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">&nbsp;</div>
+                            </div>
+                            <div class="form-group full-width" style="margin-top:1rem;">
+                                <label class="form-label"><i class="fas fa-align-left"></i> Description</label>
                                 <textarea name="service_description" class="form-textarea" rows="4" placeholder="Enter service or product details..."><?php echo htmlspecialchars($soa['service_description']); ?></textarea>
                             </div>
                         </div>

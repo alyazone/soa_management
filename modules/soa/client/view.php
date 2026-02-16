@@ -15,19 +15,27 @@ if(!$soa_id) { header("location: index.php"); exit; }
 try {
     // Fetch main SOA data along with client and staff info
     $stmt = $pdo->prepare("
-        SELECT s.*, c.client_name, c.address as client_address, 
-               c.pic_name as client_pic, c.pic_contact as client_contact, 
-               c.pic_email as client_email, 
-               st.full_name as created_by_name
-        FROM client_soa s 
-        JOIN clients c ON s.client_id = c.client_id 
+        SELECT s.*, c.client_name, c.address as client_address,
+               c.pic_name as client_pic, c.pic_contact as client_contact,
+               c.pic_email as client_email,
+               st.full_name as created_by_name,
+               ec.category_name
+        FROM client_soa s
+        JOIN clients c ON s.client_id = c.client_id
         LEFT JOIN staff st ON s.created_by = st.staff_id
+        LEFT JOIN experience_categories ec ON s.category_id = ec.category_id
         WHERE s.soa_id = :id
     ");
     $stmt->bindParam(":id", $soa_id, PDO::PARAM_INT);
     $stmt->execute();
     $soa = $stmt->fetch(PDO::FETCH_ASSOC);
     if(!$soa) { header("location: index.php"); exit(); }
+
+    // Check if experience already exists for this SOA
+    $exp_stmt = $pdo->prepare("SELECT experience_id FROM company_experiences WHERE source_soa_id = :id");
+    $exp_stmt->bindParam(":id", $soa_id, PDO::PARAM_INT);
+    $exp_stmt->execute();
+    $existing_experience = $exp_stmt->fetch(PDO::FETCH_ASSOC);
 
     // Fetch related documents
     $doc_stmt = $pdo->prepare("SELECT * FROM documents WHERE reference_type = 'ClientSOA' AND reference_id = :id ORDER BY upload_date DESC");
@@ -96,6 +104,13 @@ $days_diff = (int)$today_obj->diff($due_date_obj)->format('%r%a');
                     <?php endif; ?>
                     <a href="payments.php?id=<?php echo $soa_id; ?>" class="export-btn info"><i class="fas fa-history"></i> Payment History</a>
                     <a href="generate_pdf.php?id=<?php echo $soa_id; ?>" target="_blank" class="export-btn success"><i class="fas fa-file-pdf"></i> Generate PDF</a>
+                    <?php if($_SESSION['position'] == 'Admin'): ?>
+                        <?php if($existing_experience): ?>
+                            <a href="<?php echo $basePath; ?>modules/experience/edit.php?id=<?php echo $existing_experience['experience_id']; ?>" class="export-btn" style="background:#8b5cf6;color:white;"><i class="fas fa-briefcase"></i> View Experience</a>
+                        <?php else: ?>
+                            <a href="<?php echo $basePath; ?>modules/experience/add.php?source_soa_id=<?php echo $soa_id; ?>" class="export-btn" style="background:#8b5cf6;color:white;"><i class="fas fa-briefcase"></i> Generate Experience</a>
+                        <?php endif; ?>
+                    <?php endif; ?>
                     <?php if($soa['status'] != 'Closed' && $_SESSION['position'] == 'Admin'): ?>
                         <a href="edit.php?id=<?php echo $soa_id; ?>" class="export-btn warning"><i class="fas fa-edit"></i> Edit</a>
                     <?php endif; ?>
@@ -186,6 +201,7 @@ $days_diff = (int)$today_obj->diff($due_date_obj)->format('%r%a');
                             <div class="info-item"><label>Invoice Number</label><value><?php echo htmlspecialchars($soa['invoice_number'] ?: 'N/A'); ?></value></div>
                             <div class="info-item"><label>Terms</label><value><?php echo htmlspecialchars($soa['terms']); ?></value></div>
                             <div class="info-item"><label>Purchase Date</label><value><?php echo date('M d, Y', strtotime($soa['purchase_date'])); ?></value></div>
+                            <div class="info-item"><label>Service Category</label><value><?php echo htmlspecialchars($soa['category_name'] ?? 'N/A'); ?></value></div>
                             <div class="info-item full-width"><label>Service Description</label><value><?php echo nl2br(htmlspecialchars($soa['service_description'])); ?></value></div>
                         </div>
                     </div>
