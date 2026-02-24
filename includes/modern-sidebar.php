@@ -68,6 +68,12 @@
                     </li>
                 </ul>
             </li>
+            <li class="nav-item">
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/experience/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/experience/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Pengalaman Syarikat</span>
+                </a>
+            </li>
             <?php endif; ?>
 
             <li class="nav-item has-submenu">
@@ -110,12 +116,6 @@
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/claims/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/claims/') !== false) ? 'active' : ''; ?>">
                     <i class="fas fa-receipt"></i>
                     <span>Claims Management</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/experience/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/experience/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-briefcase"></i>
-                    <span>Pengalaman Syarikat</span>
                 </a>
             </li>
             <li class="nav-item">
