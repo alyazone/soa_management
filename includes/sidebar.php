@@ -6,14 +6,14 @@
         </div>
 
         <ul class="nav flex-column sidebar-nav">
+            <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
+
             <!-- 1. Dashboard -->
             <li class="nav-item">
                 <a class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'dashboard.php') ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>dashboard.php">
                     <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
                 </a>
             </li>
-
-            <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
 
             <!-- 2. Staff Management -->
             <li class="nav-item">
@@ -75,23 +75,30 @@
                 </div>
             </li>
 
+            <!-- 5. Company Experience (Pengalaman Syarikat) -->
+            <li class="nav-item">
+                <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/company_experience/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/company_experience/index.php">
+                    <i class="fas fa-briefcase mr-2"></i> Company Experience
+                </a>
+            </li>
+
             <?php endif; ?>
 
-            <!-- 5. Outstation Leave -->
+            <!-- 6. Outstation Leave -->
             <li class="nav-item">
                 <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/outstation_leave/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation_leave/index.php">
                     <i class="fas fa-plane-departure mr-2"></i> Outstation Leave
                 </a>
             </li>
 
-            <!-- 6. Claim Management -->
+            <!-- 7. Claim Management -->
             <li class="nav-item">
                 <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/claims/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/claims/index.php">
                     <i class="fas fa-receipt mr-2"></i> Claim Management
                 </a>
             </li>
 
-            <!-- 7. Inventory Management -->
+            <!-- 8. Inventory Management -->
             <li class="nav-item">
                 <a class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false) ? 'active' : ''; ?>" href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/inventory/index.php">
                     <i class="fas fa-boxes mr-2"></i> Inventory Management
