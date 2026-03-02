@@ -29,24 +29,6 @@
                     <span>Staff Management</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/clients/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/clients/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-building"></i>
-                    <span>Client Management</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/suppliers/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/suppliers/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-truck"></i>
-                    <span>Supplier Management</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/purchase_orders/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/purchase_orders/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span>Purchase Order</span>
-                </a>
-            </li>
             <li class="nav-item has-submenu">
                 <a href="#" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'active' : ''; ?>" data-toggle="submenu">
                     <i class="fas fa-file-invoice-dollar"></i>
@@ -67,6 +49,24 @@
                         </a>
                     </li>
                 </ul>
+            </li>
+            <li class="nav-item">
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/clients/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/clients/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-building"></i>
+                    <span>Client Management</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/suppliers/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/suppliers/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-truck"></i>
+                    <span>Supplier Management</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/purchase_orders/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/purchase_orders/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Purchase Order</span>
+                </a>
             </li>
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/experience/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/experience/') !== false) ? 'active' : ''; ?>">
