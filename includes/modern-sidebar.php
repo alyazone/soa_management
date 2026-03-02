@@ -16,39 +16,22 @@
     
     <nav class="sidebar-nav">
         <ul class="nav-list">
-            <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
+            <!-- 1. Dashboard -->
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>dashboard.php" class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'dashboard.php') ? 'active' : ''; ?>">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
+
+            <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
+
+            <!-- 2. Staff Management -->
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/staff/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/staff/') !== false) ? 'active' : ''; ?>">
                     <i class="fas fa-users"></i>
                     <span>Staff Management</span>
                 </a>
-            </li>
-            <li class="nav-item has-submenu">
-                <a href="#" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'active' : ''; ?>" data-toggle="submenu">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>SOA Management</span>
-                    <i class="fas fa-chevron-right submenu-arrow"></i>
-                </a>
-                <ul class="submenu <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'show' : ''; ?>">
-                    <li>
-                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/soa/client/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/client') !== false) ? 'active' : ''; ?>">
-                            <i class="fas fa-building"></i>
-                            <span>Client SOA</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/soa/supplier/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/supplier') !== false) ? 'active' : ''; ?>">
-                            <i class="fas fa-truck"></i>
-                            <span>Supplier SOA</span>
-                        </a>
-                    </li>
-                </ul>
             </li>
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/clients/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/clients/') !== false) ? 'active' : ''; ?>">
@@ -68,6 +51,33 @@
                     <span>Purchase Order</span>
                 </a>
             </li>
+            <li class="nav-item has-submenu">
+                <a href="#" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'active' : ''; ?>" data-toggle="submenu">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>SOA Management</span>
+                    <i class="fas fa-chevron-right submenu-arrow"></i>
+                </a>
+                <ul class="submenu <?php echo $supplierActive ? 'show' : ''; ?>">
+                    <li>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/suppliers/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/suppliers/') !== false) ? 'active' : ''; ?>">
+                            <i class="fas fa-list"></i>
+                            <span>Supplier List</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/soa/supplier/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/supplier') !== false) ? 'active' : ''; ?>">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>Supplier SOA</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/purchase_orders/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/purchase_orders/') !== false) ? 'active' : ''; ?>">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Purchase Order</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/experience/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/experience/') !== false) ? 'active' : ''; ?>">
                     <i class="fas fa-briefcase"></i>
@@ -76,6 +86,7 @@
             </li>
             <?php endif; ?>
 
+            <!-- 5. Outstation Leave -->
             <li class="nav-item has-submenu">
                 <a href="#" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>" data-toggle="submenu">
                     <i class="fas fa-plane"></i>
@@ -105,26 +116,22 @@
                     <?php endif; ?>
                 </ul>
             </li>
-            <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
+
+            <!-- 6. Claim Management -->
+            <li class="nav-item">
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/claims/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/claims/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-receipt"></i>
+                    <span>Claim Management</span>
+                </a>
+            </li>
+
+            <!-- 7. Inventory Management -->
             <li class="nav-item">
                 <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/inventory/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false) ? 'active' : ''; ?>">
                     <i class="fas fa-boxes"></i>
                     <span>Inventory Management</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/claims/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/claims/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-receipt"></i>
-                    <span>Claims Management</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/documents/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/documents/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-file-upload"></i>
-                    <span>Document Upload</span>
-                </a>
-            </li>
-            <?php endif; ?>
         </ul>
     </nav>
     <div class="sidebar-footer">
@@ -311,7 +318,7 @@
 }
 
 .submenu.show {
-    max-height: 200px;
+    max-height: 300px;
 }
 
 .sidebar-collapsed .submenu {
