@@ -44,8 +44,18 @@ try {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT * FROM documents 
-                           WHERE reference_type = 'Supplier' AND reference_id = :id 
+    $stmt = $pdo->prepare("SELECT * FROM supplier_contacts WHERE supplier_id = :id ORDER BY created_at ASC");
+    $stmt->bindParam(":id", $_GET["id"], PDO::PARAM_INT);
+    $stmt->execute();
+    $additional_contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch(PDOException $e) {
+    error_log("Additional contacts fetch error: " . $e->getMessage());
+    $additional_contacts = [];
+}
+
+try {
+    $stmt = $pdo->prepare("SELECT * FROM documents
+                           WHERE reference_type = 'Supplier' AND reference_id = :id
                            ORDER BY upload_date DESC");
     $stmt->bindParam(":id", $_GET["id"], PDO::PARAM_INT);
     $stmt->execute();
@@ -133,9 +143,31 @@ foreach($soas as $soa) {
                             <div class="info-item"><label>Supplier Name</label><value><?php echo htmlspecialchars($supplier['supplier_name']); ?></value></div>
                             <div class="info-item"><label>Supplier ID</label><value>#<?php echo str_pad($supplier['supplier_id'], 3, '0', STR_PAD_LEFT); ?></value></div>
                             <div class="info-item full-width"><label>Address</label><value><?php echo nl2br(htmlspecialchars($supplier['address'])); ?></value></div>
-                            <div class="info-item"><label>PIC Name</label><value><?php echo htmlspecialchars($supplier['pic_name']); ?></value></div>
-                            <div class="info-item"><label>PIC Contact</label><value><a href="tel:<?php echo htmlspecialchars($supplier['pic_contact']); ?>" class="contact-link"><i class="fas fa-phone"></i> <?php echo htmlspecialchars($supplier['pic_contact']); ?></a></value></div>
-                            <div class="info-item"><label>PIC Email</label><value><a href="mailto:<?php echo htmlspecialchars($supplier['pic_email']); ?>" class="contact-link"><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($supplier['pic_email']); ?></a></value></div>
+                            <div class="info-item full-width"><label>Primary Contact</label>
+                                <value class="contact-block">
+                                    <span class="contact-person-name"><i class="fas fa-user"></i> <?php echo htmlspecialchars($supplier['pic_name']); ?></span>
+                                    <a href="tel:<?php echo htmlspecialchars($supplier['pic_contact']); ?>" class="contact-link"><i class="fas fa-phone"></i> <?php echo htmlspecialchars($supplier['pic_contact']); ?></a>
+                                    <a href="mailto:<?php echo htmlspecialchars($supplier['pic_email']); ?>" class="contact-link"><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($supplier['pic_email']); ?></a>
+                                </value>
+                            </div>
+                            <?php if(!empty($additional_contacts)): ?>
+                            <div class="info-item full-width"><label>Additional Contacts</label>
+                                <value>
+                                    <div class="additional-contacts-list">
+                                        <?php foreach($additional_contacts as $idx => $contact): ?>
+                                        <div class="additional-contact-card">
+                                            <div class="additional-contact-title"><i class="fas fa-user-plus"></i> Contact Person <?php echo $idx + 2; ?></div>
+                                            <div class="additional-contact-details">
+                                                <span class="contact-person-name"><?php echo htmlspecialchars($contact['contact_name']); ?></span>
+                                                <a href="tel:<?php echo htmlspecialchars($contact['contact_number']); ?>" class="contact-link"><i class="fas fa-phone"></i> <?php echo htmlspecialchars($contact['contact_number']); ?></a>
+                                                <a href="mailto:<?php echo htmlspecialchars($contact['contact_email']); ?>" class="contact-link"><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($contact['contact_email']); ?></a>
+                                            </div>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </value>
+                            </div>
+                            <?php endif; ?>
                             <div class="info-item"><label>Created At</label><value><?php echo date('M d, Y H:i', strtotime($supplier['created_at'])); ?></value></div>
                         </div>
                     </div>
@@ -223,6 +255,12 @@ foreach($soas as $soa) {
     </script>
     <style>
         .profile-header{background:white;border-radius:var(--border-radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:2rem;margin-bottom:2rem;display:flex;align-items:center;gap:1.5rem}.profile-avatar{width:80px;height:80px;background:var(--primary-color);border-radius:var(--border-radius);display:flex;align-items:center;justify-content:center;color:white;font-size:2rem}.profile-info h2{color:var(--gray-900);margin-bottom:.5rem;font-size:1.5rem;font-weight:600}.profile-subtitle{color:var(--gray-600);margin-bottom:1rem}.profile-meta{display:flex;gap:1.5rem}.meta-item{display:flex;align-items:center;gap:.5rem;color:var(--gray-600);font-size:.875rem}.meta-item i{color:var(--gray-400)}.content-grid{display:grid;grid-template-columns:1fr 2fr;gap:2rem;margin-bottom:2rem}.info-card{background:white;border-radius:var(--border-radius);box-shadow:var(--shadow);border:1px solid var(--gray-200)}.info-header{padding:1.5rem;border-bottom:1px solid var(--gray-200)}.info-header h3{display:flex;align-items:center;gap:.5rem;color:var(--gray-900);font-size:1.125rem;font-weight:600;margin:0}.info-body{padding:1.5rem}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}.info-item{display:flex;flex-direction:column;gap:.5rem}.info-item.full-width{grid-column:1 / -1}.info-item label{font-size:.875rem;font-weight:500;color:var(--gray-600)}.info-item value{font-size:.875rem;color:var(--gray-900);font-weight:500}.contact-link{display:inline-flex;align-items:center;gap:.5rem;color:var(--primary-color);text-decoration:none;transition:var(--transition)}.contact-link:hover{color:var(--primary-dark);text-decoration:none}.account-number{font-family:monospace;font-weight:600;color:var(--primary-color)}.document-type-badge{display:inline-flex;align-items:center;padding:.375rem .75rem;background:var(--gray-100);color:var(--gray-700);border-radius:9999px;font-size:.75rem;font-weight:500}.status-badge{display:inline-flex;align-items:center;padding:.375rem .75rem;border-radius:9999px;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}.status-paid{background:rgba(16,185,129,.1);color:var(--success-color)}.status-pending{background:rgba(245,158,11,.1);color:var(--warning-color)}.status-overdue{background:rgba(239,68,68,.1);color:var(--danger-color)}.action-btn-download{background:rgba(16,185,129,.1);color:var(--success-color)}.action-btn-download:hover{background:var(--success-color);color:white}@media (max-width:768px){.profile-header{flex-direction:column;text-align:center}.content-grid{grid-template-columns:1fr}.info-grid{grid-template-columns:1fr}.profile-meta{justify-content:center}}
+        .contact-block{display:flex;flex-direction:column;gap:.4rem}
+        .contact-person-name{display:flex;align-items:center;gap:.5rem;font-weight:600;color:var(--gray-900);font-size:.875rem}
+        .additional-contacts-list{display:flex;flex-direction:column;gap:.75rem}
+        .additional-contact-card{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--border-radius-sm);padding:.875rem 1rem}
+        .additional-contact-title{display:flex;align-items:center;gap:.375rem;font-size:.75rem;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+        .additional-contact-details{display:flex;flex-direction:column;gap:.35rem}
     </style>
 </body>
 </html>

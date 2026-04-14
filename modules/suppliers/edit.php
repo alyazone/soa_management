@@ -16,6 +16,8 @@ if(empty($_GET["id"])){
 
 $supplier_name = $address = $pic_name = $pic_contact = $pic_email = "";
 $supplier_name_err = $address_err = $pic_name_err = $pic_contact_err = $pic_email_err = "";
+$additional_contacts = [];
+$has_contact_err = false;
 
 if($_SERVER["REQUEST_METHOD"] == "POST"){
     $id = $_POST["id"];
@@ -47,10 +49,37 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
     }
     
-    if(empty($supplier_name_err) && empty($address_err) && empty($pic_name_err) && empty($pic_contact_err) && empty($pic_email_err)){
+    // Validate additional contacts
+    $add_names   = isset($_POST["add_contact_name"])   ? $_POST["add_contact_name"]   : [];
+    $add_numbers = isset($_POST["add_contact_number"]) ? $_POST["add_contact_number"] : [];
+    $add_emails  = isset($_POST["add_contact_email"])  ? $_POST["add_contact_email"]  : [];
+
+    for($i = 0; $i < count($add_names); $i++){
+        $c_name   = trim($add_names[$i]   ?? '');
+        $c_number = trim($add_numbers[$i] ?? '');
+        $c_email  = trim($add_emails[$i]  ?? '');
+        $err = ['name' => '', 'number' => '', 'email' => ''];
+
+        if($c_name !== '' || $c_number !== '' || $c_email !== ''){
+            if($c_name === '')   { $err['name']   = "Please enter contact name.";   $has_contact_err = true; }
+            if($c_number === '') { $err['number'] = "Please enter contact number."; $has_contact_err = true; }
+            if($c_email === '')  {
+                $err['email'] = "Please enter contact email.";
+                $has_contact_err = true;
+            } elseif(!filter_var($c_email, FILTER_VALIDATE_EMAIL)){
+                $err['email'] = "Please enter a valid email address.";
+                $has_contact_err = true;
+            }
+            $additional_contacts[] = ['name' => $c_name, 'number' => $c_number, 'email' => $c_email, 'err' => $err];
+        }
+    }
+
+    if(empty($supplier_name_err) && empty($address_err) && empty($pic_name_err) && empty($pic_contact_err) && empty($pic_email_err) && !$has_contact_err){
         try {
+            $pdo->beginTransaction();
+
             $sql = "UPDATE suppliers SET supplier_name = :supplier_name, address = :address, pic_name = :pic_name, pic_contact = :pic_contact, pic_email = :pic_email WHERE supplier_id = :id";
-            
+
             if($stmt = $pdo->prepare($sql)){
                 $stmt->bindParam(":supplier_name", $param_supplier_name, PDO::PARAM_STR);
                 $stmt->bindParam(":address", $param_address, PDO::PARAM_STR);
@@ -58,22 +87,41 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 $stmt->bindParam(":pic_contact", $param_pic_contact, PDO::PARAM_STR);
                 $stmt->bindParam(":pic_email", $param_pic_email, PDO::PARAM_STR);
                 $stmt->bindParam(":id", $param_id, PDO::PARAM_INT);
-                
+
                 $param_supplier_name = $supplier_name;
                 $param_address = $address;
                 $param_pic_name = $pic_name;
                 $param_pic_contact = $pic_contact;
                 $param_pic_email = $pic_email;
                 $param_id = $id;
-                
+
                 if($stmt->execute()){
+                    $del_stmt = $pdo->prepare("DELETE FROM supplier_contacts WHERE supplier_id = :id");
+                    $del_stmt->bindParam(":id", $id, PDO::PARAM_INT);
+                    $del_stmt->execute();
+
+                    if(!empty($additional_contacts)){
+                        $contact_sql = "INSERT INTO supplier_contacts (supplier_id, contact_name, contact_number, contact_email) VALUES (:supplier_id, :contact_name, :contact_number, :contact_email)";
+                        $contact_stmt = $pdo->prepare($contact_sql);
+                        foreach($additional_contacts as $contact){
+                            $contact_stmt->bindParam(":supplier_id",    $id,                 PDO::PARAM_INT);
+                            $contact_stmt->bindParam(":contact_name",   $contact['name'],    PDO::PARAM_STR);
+                            $contact_stmt->bindParam(":contact_number", $contact['number'],  PDO::PARAM_STR);
+                            $contact_stmt->bindParam(":contact_email",  $contact['email'],   PDO::PARAM_STR);
+                            $contact_stmt->execute();
+                        }
+                    }
+
+                    $pdo->commit();
                     header("location: index.php?success=updated");
                     exit();
                 } else{
+                    $pdo->rollBack();
                     $general_err = "Oops! Something went wrong. Please try again later.";
                 }
             }
         } catch(PDOException $e) {
+            $pdo->rollBack();
             error_log("Supplier update error: " . $e->getMessage());
             $general_err = "An error occurred while updating the supplier.";
         }
@@ -83,23 +131,40 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $stmt = $pdo->prepare("SELECT * FROM suppliers WHERE supplier_id = :id");
         $stmt->bindParam(":id", $_GET["id"], PDO::PARAM_INT);
         $stmt->execute();
-        
+
         if($stmt->rowCount() != 1){
             header("location: index.php");
             exit();
         }
-        
+
         $supplier = $stmt->fetch(PDO::FETCH_ASSOC);
         $supplier_name = $supplier['supplier_name'];
         $address = $supplier['address'];
         $pic_name = $supplier['pic_name'];
         $pic_contact = $supplier['pic_contact'];
         $pic_email = $supplier['pic_email'];
-        
+
     } catch(PDOException $e) {
         error_log("Supplier fetch error: " . $e->getMessage());
         header("location: index.php");
         exit();
+    }
+
+    // Fetch existing additional contacts
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM supplier_contacts WHERE supplier_id = :id ORDER BY created_at ASC");
+        $stmt->bindParam(":id", $_GET["id"], PDO::PARAM_INT);
+        $stmt->execute();
+        foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $dbc){
+            $additional_contacts[] = [
+                'name'   => $dbc['contact_name'],
+                'number' => $dbc['contact_number'],
+                'email'  => $dbc['contact_email'],
+                'err'    => ['name' => '', 'number' => '', 'email' => '']
+            ];
+        }
+    } catch(PDOException $e) {
+        error_log("Additional contacts fetch error: " . $e->getMessage());
     }
 }
 ?>
@@ -187,7 +252,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
                         <div class="form-section">
                             <div class="section-header">
-                                <h4><i class="fas fa-user"></i> Contact Person Information</h4>
+                                <h4><i class="fas fa-user"></i> Primary Contact Person</h4>
                                 <span class="required-badge">Required</span>
                             </div>
                             <div class="form-grid">
@@ -209,6 +274,43 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             </div>
                         </div>
 
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4><i class="fas fa-users"></i> Additional Contacts</h4>
+                                <span class="optional-badge">Optional</span>
+                            </div>
+                            <div id="additional-contacts-container">
+                                <?php foreach($additional_contacts as $idx => $ac): ?>
+                                <div class="additional-contact-row">
+                                    <div class="contact-row-header">
+                                        <span class="contact-row-label"><i class="fas fa-user-plus"></i> Contact Person <?php echo $idx + 2; ?></span>
+                                        <button type="button" class="remove-contact-btn" onclick="removeContact(this)"><i class="fas fa-times"></i> Remove</button>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div class="form-group full-width">
+                                            <label class="form-label"><i class="fas fa-user"></i> Contact Person Name</label>
+                                            <input type="text" name="add_contact_name[]" class="form-input <?php echo !empty($ac['err']['name']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($ac['name']); ?>" placeholder="Enter contact person's full name">
+                                            <?php if(!empty($ac['err']['name'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $ac['err']['name']; ?></span><?php endif; ?>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label"><i class="fas fa-phone"></i> Contact Number</label>
+                                            <input type="tel" name="add_contact_number[]" class="form-input <?php echo !empty($ac['err']['number']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($ac['number']); ?>" placeholder="Enter phone number">
+                                            <?php if(!empty($ac['err']['number'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $ac['err']['number']; ?></span><?php endif; ?>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label"><i class="fas fa-envelope"></i> Email Address</label>
+                                            <input type="email" name="add_contact_email[]" class="form-input <?php echo !empty($ac['err']['email']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($ac['email']); ?>" placeholder="Enter email address">
+                                            <?php if(!empty($ac['err']['email'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $ac['err']['email']; ?></span><?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <button type="button" class="add-contact-btn" onclick="addContact()">
+                                <i class="fas fa-plus"></i> Add Another Contact Person
+                            </button>
+                        </div>
+
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Supplier</button>
                             <a href="view.php?id=<?php echo $_GET['id']; ?>" class="btn btn-info"><i class="fas fa-eye"></i> View Details</a>
@@ -228,10 +330,59 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             initializeDashboard();
             initializeFormValidation();
         });
+
+        function addContact() {
+            const container = document.getElementById('additional-contacts-container');
+            const rowNum = container.querySelectorAll('.additional-contact-row').length + 2;
+            const row = document.createElement('div');
+            row.className = 'additional-contact-row';
+            row.innerHTML = `
+                <div class="contact-row-header">
+                    <span class="contact-row-label"><i class="fas fa-user-plus"></i> Contact Person ${rowNum}</span>
+                    <button type="button" class="remove-contact-btn" onclick="removeContact(this)"><i class="fas fa-times"></i> Remove</button>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label class="form-label"><i class="fas fa-user"></i> Contact Person Name</label>
+                        <input type="text" name="add_contact_name[]" class="form-input" placeholder="Enter contact person's full name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-phone"></i> Contact Number</label>
+                        <input type="tel" name="add_contact_number[]" class="form-input" placeholder="Enter phone number">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-envelope"></i> Email Address</label>
+                        <input type="email" name="add_contact_email[]" class="form-input" placeholder="Enter email address">
+                    </div>
+                </div>`;
+            container.appendChild(row);
+            renumberContactRows();
+        }
+
+        function removeContact(btn) {
+            btn.closest('.additional-contact-row').remove();
+            renumberContactRows();
+        }
+
+        function renumberContactRows() {
+            document.querySelectorAll('.additional-contact-row').forEach(function(row, idx) {
+                const label = row.querySelector('.contact-row-label');
+                if (label) label.innerHTML = `<i class="fas fa-user-plus"></i> Contact Person ${idx + 2}`;
+            });
+        }
+
         function initializeFormValidation(){const e=document.getElementById("supplierForm"),t=e.querySelectorAll("input, textarea");t.forEach(e=>{e.addEventListener("blur",function(){validateField(this)}),e.addEventListener("input",function(){this.classList.contains("error")&&validateField(this)})}),e.addEventListener("submit",function(o){let i=!0;t.forEach(e=>{validateField(e)||i||(i=!1)}),i||(o.preventDefault(),showFormError("Please correct the errors above before submitting."))})}function validateField(e){const t=e.value.trim(),o=e.name;let i=!0,a="";e.classList.remove("error");const r=e.parentNode.querySelector(".error-message");if(r&&r.remove(),!e.hasAttribute("required")&&""===t)return!0;switch(o){case"supplier_name":""===t?(i=!1,a="Supplier name is required."):t.length<2&&(i=!1,a="Supplier name must be at least 2 characters.");break;case"address":""===t?(i=!1,a="Address is required."):t.length<10&&(i=!1,a="Please enter a complete address.");break;case"pic_name":""===t?(i=!1,a="Contact person name is required."):t.length<2&&(i=!1,a="Name must be at least 2 characters.");break;case"pic_contact":""===t?(i=!1,a="Contact number is required."):/^[\d\s\-+()]+$/.test(t)||(i=!1,a="Please enter a valid phone number.");break;case"pic_email":""===t?(i=!1,a="Email address is required."):/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)||(i=!1,a="Please enter a valid email address.")}if(!i){e.classList.add("error");const t=document.createElement("span");t.className="error-message",t.innerHTML=`<i class="fas fa-exclamation-circle"></i> ${a}`,e.parentNode.appendChild(t)}return i}function showFormError(e){const t=document.querySelector(".alert-error");t&&t.remove();const o=document.createElement("div");o.className="alert alert-error",o.innerHTML=`<div class="alert-content"><i class="fas fa-exclamation-circle"></i><span>${e}</span></div><button class="alert-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>`;const i=document.querySelector(".form-card");i.parentNode.insertBefore(o,i),setTimeout(()=>{o.parentNode&&o.remove()},5e3)}
     </script>
     <style>
         .form-card{background:white;border-radius:var(--border-radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);overflow:hidden}.form-header{padding:1.5rem;border-bottom:1px solid var(--gray-200);background:var(--gray-50)}.form-title h3{display:flex;align-items:center;gap:.5rem;color:var(--gray-900);font-size:1.25rem;font-weight:600;margin:0 0 .5rem}.form-title p{color:var(--gray-600);margin:0}.form-body{padding:2rem}.form-section{margin-bottom:2rem}.form-section:last-child{margin-bottom:0}.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:1px solid var(--gray-200)}.section-header h4{display:flex;align-items:center;gap:.5rem;color:var(--gray-900);font-size:1.125rem;font-weight:600;margin:0}.required-badge{background:var(--danger-color);color:white;padding:.25rem .5rem;border-radius:9999px;font-size:.75rem;font-weight:500}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}.form-group{display:flex;flex-direction:column;gap:.5rem}.form-group.full-width{grid-column:1 / -1}.form-label{display:flex;align-items:center;gap:.5rem;font-size:.875rem;font-weight:500;color:var(--gray-700)}.form-label.required::after{content:'*';color:var(--danger-color);margin-left:.25rem}.form-input,.form-textarea{padding:.75rem;border:1px solid var(--gray-300);border-radius:var(--border-radius-sm);font-size:.875rem;transition:var(--transition);background:white}.form-input:focus,.form-textarea:focus{outline:0;border-color:var(--primary-color);box-shadow:0 0 0 3px rgba(59,130,246,.1)}.form-input.error,.form-textarea.error{border-color:var(--danger-color);box-shadow:0 0 0 3px rgba(239,68,68,.1)}.form-textarea{resize:vertical;min-height:80px}.form-help{font-size:.75rem;color:var(--gray-500);margin-top:.25rem}.error-message{display:flex;align-items:center;gap:.5rem;color:var(--danger-color);font-size:.75rem;font-weight:500;margin-top:.25rem}.form-actions{display:flex;gap:1rem;padding-top:2rem;border-top:1px solid var(--gray-200);margin-top:2rem}.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.5rem;border:none;border-radius:var(--border-radius-sm);font-size:.875rem;font-weight:500;text-decoration:none;cursor:pointer;transition:var(--transition)}.btn-primary{background:var(--primary-color);color:white}.btn-primary:hover{background:var(--primary-dark);color:white;text-decoration:none}.btn-info{background:var(--info-color);color:white}.btn-info:hover{background:#0891b2;color:white;text-decoration:none}.btn-secondary{background:var(--gray-100);color:var(--gray-700);border:1px solid var(--gray-300)}.btn-secondary:hover{background:var(--gray-200);color:var(--gray-900);text-decoration:none}.profile-header{background:white;border-radius:var(--border-radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:2rem;margin-bottom:2rem;display:flex;align-items:center;gap:1.5rem}.profile-avatar{width:80px;height:80px;background:var(--warning-color);border-radius:var(--border-radius);display:flex;align-items:center;justify-content:center;color:white;font-size:2rem}.profile-info h2{color:var(--gray-900);margin-bottom:.5rem;font-size:1.5rem;font-weight:600}.profile-subtitle{color:var(--gray-600);margin-bottom:1rem}.profile-meta{display:flex;gap:1.5rem}.meta-item{display:flex;align-items:center;gap:.5rem;color:var(--warning-color);font-size:.875rem;font-weight:500}.meta-item i{color:var(--warning-color)}.alert{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-radius:var(--border-radius);margin-bottom:1.5rem;border:1px solid}.alert-error{background:rgba(239,68,68,.1);border-color:var(--danger-color);color:var(--danger-color)}.alert-content{display:flex;align-items:center;gap:.75rem}.alert-close{background:0 0;border:none;color:inherit;cursor:pointer;padding:.25rem;border-radius:var(--border-radius-sm);transition:var(--transition)}.alert-close:hover{background:rgba(0,0,0,.1)}@media (max-width:768px){.form-grid{grid-template-columns:1fr}.form-body{padding:1.5rem}.form-actions{flex-direction:column}.profile-header{flex-direction:column;text-align:center}.profile-meta{justify-content:center}}
+        .optional-badge{background:var(--gray-400);color:white;padding:.25rem .5rem;border-radius:9999px;font-size:.75rem;font-weight:500}
+        .additional-contact-row{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--border-radius-sm);padding:1.25rem;margin-bottom:1rem}
+        .contact-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+        .contact-row-label{display:flex;align-items:center;gap:.5rem;font-size:.875rem;font-weight:600;color:var(--gray-700)}
+        .remove-contact-btn{display:inline-flex;align-items:center;gap:.375rem;padding:.375rem .75rem;background:rgba(239,68,68,.1);color:var(--danger-color);border:1px solid rgba(239,68,68,.2);border-radius:var(--border-radius-sm);font-size:.75rem;font-weight:500;cursor:pointer;transition:var(--transition)}
+        .remove-contact-btn:hover{background:var(--danger-color);color:white}
+        .add-contact-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.625rem 1.25rem;background:rgba(59,130,246,.08);color:var(--primary-color);border:1px dashed var(--primary-color);border-radius:var(--border-radius-sm);font-size:.875rem;font-weight:500;cursor:pointer;transition:var(--transition);margin-top:.5rem}
+        .add-contact-btn:hover{background:rgba(59,130,246,.15)}
     </style>
 </body>
 </html>
