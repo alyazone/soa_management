@@ -28,6 +28,8 @@ if(empty($_GET["id"])){
 // Define variables and initialize with empty values
 $client_name = $address = $pic_name = $pic_contact = $pic_email = "";
 $client_name_err = $address_err = $pic_name_err = $pic_contact_err = $pic_email_err = "";
+$additional_contacts = [];
+$has_contact_err = false;
 
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
@@ -86,39 +88,82 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
     }
     
+    // Validate additional contacts
+    $add_names    = isset($_POST["add_contact_name"])   ? $_POST["add_contact_name"]   : [];
+    $add_numbers  = isset($_POST["add_contact_number"]) ? $_POST["add_contact_number"] : [];
+    $add_emails   = isset($_POST["add_contact_email"])  ? $_POST["add_contact_email"]  : [];
+
+    for($i = 0; $i < count($add_names); $i++){
+        $c_name   = trim($add_names[$i]   ?? '');
+        $c_number = trim($add_numbers[$i] ?? '');
+        $c_email  = trim($add_emails[$i]  ?? '');
+        $err = ['name' => '', 'number' => '', 'email' => ''];
+
+        if($c_name !== '' || $c_number !== '' || $c_email !== ''){
+            if($c_name === '')   { $err['name']   = "Please enter contact name.";   $has_contact_err = true; }
+            if($c_number === '') { $err['number'] = "Please enter contact number."; $has_contact_err = true; }
+            if($c_email === '')  {
+                $err['email'] = "Please enter contact email.";
+                $has_contact_err = true;
+            } elseif(!filter_var($c_email, FILTER_VALIDATE_EMAIL)){
+                $err['email'] = "Please enter a valid email address.";
+                $has_contact_err = true;
+            }
+            $additional_contacts[] = ['name' => $c_name, 'number' => $c_number, 'email' => $c_email, 'err' => $err];
+        }
+    }
+
     // Check input errors before updating the database
-    if(empty($client_name_err) && empty($address_err) && empty($pic_name_err) && empty($pic_contact_err) && empty($pic_email_err)){
+    if(empty($client_name_err) && empty($address_err) && empty($pic_name_err) && empty($pic_contact_err) && empty($pic_email_err) && !$has_contact_err){
         try {
+            $pdo->beginTransaction();
+
             // Prepare an update statement
             $sql = "UPDATE clients SET client_name = :client_name, address = :address, pic_name = :pic_name, pic_contact = :pic_contact, pic_email = :pic_email WHERE client_id = :id";
-            
+
             if($stmt = $pdo->prepare($sql)){
-                // Bind variables to the prepared statement as parameters
                 $stmt->bindParam(":client_name", $param_client_name, PDO::PARAM_STR);
                 $stmt->bindParam(":address", $param_address, PDO::PARAM_STR);
                 $stmt->bindParam(":pic_name", $param_pic_name, PDO::PARAM_STR);
                 $stmt->bindParam(":pic_contact", $param_pic_contact, PDO::PARAM_STR);
                 $stmt->bindParam(":pic_email", $param_pic_email, PDO::PARAM_STR);
                 $stmt->bindParam(":id", $param_id, PDO::PARAM_INT);
-                
-                // Set parameters
+
                 $param_client_name = $client_name;
                 $param_address = $address;
                 $param_pic_name = $pic_name;
                 $param_pic_contact = $pic_contact;
                 $param_pic_email = $pic_email;
                 $param_id = $id;
-                
-                // Attempt to execute the prepared statement
+
                 if($stmt->execute()){
-                    // Records updated successfully. Redirect to landing page
+                    // Replace all additional contacts: delete existing, re-insert
+                    $del_stmt = $pdo->prepare("DELETE FROM client_contacts WHERE client_id = :id");
+                    $del_stmt->bindParam(":id", $id, PDO::PARAM_INT);
+                    $del_stmt->execute();
+
+                    if(!empty($additional_contacts)){
+                        $contact_sql = "INSERT INTO client_contacts (client_id, contact_name, contact_number, contact_email) VALUES (:client_id, :contact_name, :contact_number, :contact_email)";
+                        $contact_stmt = $pdo->prepare($contact_sql);
+                        foreach($additional_contacts as $contact){
+                            $contact_stmt->bindParam(":client_id",      $id,                 PDO::PARAM_INT);
+                            $contact_stmt->bindParam(":contact_name",   $contact['name'],    PDO::PARAM_STR);
+                            $contact_stmt->bindParam(":contact_number", $contact['number'],  PDO::PARAM_STR);
+                            $contact_stmt->bindParam(":contact_email",  $contact['email'],   PDO::PARAM_STR);
+                            $contact_stmt->execute();
+                        }
+                    }
+
+                    $pdo->commit();
                     header("location: index.php?success=updated");
                     exit();
                 } else{
+                    $pdo->rollBack();
                     $general_err = "Oops! Something went wrong. Please try again later.";
                 }
             }
         } catch(PDOException $e) {
+            $pdo->rollBack();
             error_log("Client update error: " . $e->getMessage());
             $general_err = "An error occurred while updating the client.";
         }
@@ -129,25 +174,43 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $stmt = $pdo->prepare("SELECT * FROM clients WHERE client_id = :id");
         $stmt->bindParam(":id", $_GET["id"], PDO::PARAM_INT);
         $stmt->execute();
-        
+
         if($stmt->rowCount() != 1){
             header("location: index.php");
             exit();
         }
-        
+
         $client = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         // Set values
         $client_name = $client['client_name'];
         $address = $client['address'];
         $pic_name = $client['pic_name'];
         $pic_contact = $client['pic_contact'];
         $pic_email = $client['pic_email'];
-        
+
     } catch(PDOException $e) {
         error_log("Client fetch error: " . $e->getMessage());
         header("location: index.php");
         exit();
+    }
+
+    // Fetch existing additional contacts
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM client_contacts WHERE client_id = :id ORDER BY created_at ASC");
+        $stmt->bindParam(":id", $_GET["id"], PDO::PARAM_INT);
+        $stmt->execute();
+        $db_contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach($db_contacts as $dbc){
+            $additional_contacts[] = [
+                'name'   => $dbc['contact_name'],
+                'number' => $dbc['contact_number'],
+                'email'  => $dbc['contact_email'],
+                'err'    => ['name' => '', 'number' => '', 'email' => '']
+            ];
+        }
+    } catch(PDOException $e) {
+        error_log("Additional contacts fetch error: " . $e->getMessage());
     }
 }
 ?>
@@ -301,21 +364,21 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             <div class="section-header">
                                 <h4>
                                     <i class="fas fa-user"></i>
-                                    Contact Person Information
+                                    Primary Contact Person
                                 </h4>
                                 <span class="required-badge">Required</span>
                             </div>
-                            
+
                             <div class="form-grid">
                                 <div class="form-group full-width">
                                     <label class="form-label required">
                                         <i class="fas fa-user"></i>
                                         Contact Person Name
                                     </label>
-                                    <input type="text" 
-                                           name="pic_name" 
-                                           class="form-input <?php echo (!empty($pic_name_err)) ? 'error' : ''; ?>" 
-                                           value="<?php echo htmlspecialchars($pic_name); ?>" 
+                                    <input type="text"
+                                           name="pic_name"
+                                           class="form-input <?php echo (!empty($pic_name_err)) ? 'error' : ''; ?>"
+                                           value="<?php echo htmlspecialchars($pic_name); ?>"
                                            placeholder="Enter contact person's full name"
                                            required>
                                     <?php if(!empty($pic_name_err)): ?>
@@ -325,16 +388,16 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                         </span>
                                     <?php endif; ?>
                                 </div>
-                                
+
                                 <div class="form-group">
                                     <label class="form-label required">
                                         <i class="fas fa-phone"></i>
                                         Contact Number
                                     </label>
-                                    <input type="tel" 
-                                           name="pic_contact" 
-                                           class="form-input <?php echo (!empty($pic_contact_err)) ? 'error' : ''; ?>" 
-                                           value="<?php echo htmlspecialchars($pic_contact); ?>" 
+                                    <input type="tel"
+                                           name="pic_contact"
+                                           class="form-input <?php echo (!empty($pic_contact_err)) ? 'error' : ''; ?>"
+                                           value="<?php echo htmlspecialchars($pic_contact); ?>"
                                            placeholder="Enter phone number"
                                            required>
                                     <?php if(!empty($pic_contact_err)): ?>
@@ -344,16 +407,16 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                         </span>
                                     <?php endif; ?>
                                 </div>
-                                
+
                                 <div class="form-group">
                                     <label class="form-label required">
                                         <i class="fas fa-envelope"></i>
                                         Email Address
                                     </label>
-                                    <input type="email" 
-                                           name="pic_email" 
-                                           class="form-input <?php echo (!empty($pic_email_err)) ? 'error' : ''; ?>" 
-                                           value="<?php echo htmlspecialchars($pic_email); ?>" 
+                                    <input type="email"
+                                           name="pic_email"
+                                           class="form-input <?php echo (!empty($pic_email_err)) ? 'error' : ''; ?>"
+                                           value="<?php echo htmlspecialchars($pic_email); ?>"
                                            placeholder="Enter email address"
                                            required>
                                     <?php if(!empty($pic_email_err)): ?>
@@ -364,6 +427,82 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                     <?php endif; ?>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Additional Contacts Section -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4>
+                                    <i class="fas fa-users"></i>
+                                    Additional Contacts
+                                </h4>
+                                <span class="optional-badge">Optional</span>
+                            </div>
+
+                            <div id="additional-contacts-container">
+                                <?php foreach($additional_contacts as $idx => $ac): ?>
+                                <div class="additional-contact-row">
+                                    <div class="contact-row-header">
+                                        <span class="contact-row-label">
+                                            <i class="fas fa-user-plus"></i>
+                                            Contact Person <?php echo $idx + 2; ?>
+                                        </span>
+                                        <button type="button" class="remove-contact-btn" onclick="removeContact(this)">
+                                            <i class="fas fa-times"></i> Remove
+                                        </button>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div class="form-group full-width">
+                                            <label class="form-label">
+                                                <i class="fas fa-user"></i>
+                                                Contact Person Name
+                                            </label>
+                                            <input type="text"
+                                                   name="add_contact_name[]"
+                                                   class="form-input <?php echo !empty($ac['err']['name']) ? 'error' : ''; ?>"
+                                                   value="<?php echo htmlspecialchars($ac['name']); ?>"
+                                                   placeholder="Enter contact person's full name">
+                                            <?php if(!empty($ac['err']['name'])): ?>
+                                                <span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $ac['err']['name']; ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                <i class="fas fa-phone"></i>
+                                                Contact Number
+                                            </label>
+                                            <input type="tel"
+                                                   name="add_contact_number[]"
+                                                   class="form-input <?php echo !empty($ac['err']['number']) ? 'error' : ''; ?>"
+                                                   value="<?php echo htmlspecialchars($ac['number']); ?>"
+                                                   placeholder="Enter phone number">
+                                            <?php if(!empty($ac['err']['number'])): ?>
+                                                <span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $ac['err']['number']; ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                <i class="fas fa-envelope"></i>
+                                                Email Address
+                                            </label>
+                                            <input type="email"
+                                                   name="add_contact_email[]"
+                                                   class="form-input <?php echo !empty($ac['err']['email']) ? 'error' : ''; ?>"
+                                                   value="<?php echo htmlspecialchars($ac['email']); ?>"
+                                                   placeholder="Enter email address">
+                                            <?php if(!empty($ac['err']['email'])): ?>
+                                                <span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $ac['err']['email']; ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <button type="button" class="add-contact-btn" onclick="addContact()">
+                                <i class="fas fa-plus"></i>
+                                Add Another Contact Person
+                            </button>
                         </div>
 
                         <!-- Form Actions -->
@@ -438,6 +577,68 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 if (!isValid) {
                     e.preventDefault();
                     showFormError('Please correct the errors above before submitting.');
+                }
+            });
+        }
+
+        function addContact() {
+            const container = document.getElementById('additional-contacts-container');
+            const rowNum = container.querySelectorAll('.additional-contact-row').length + 2;
+
+            const row = document.createElement('div');
+            row.className = 'additional-contact-row';
+            row.innerHTML = `
+                <div class="contact-row-header">
+                    <span class="contact-row-label">
+                        <i class="fas fa-user-plus"></i>
+                        Contact Person ${rowNum}
+                    </span>
+                    <button type="button" class="remove-contact-btn" onclick="removeContact(this)">
+                        <i class="fas fa-times"></i> Remove
+                    </button>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label class="form-label">
+                            <i class="fas fa-user"></i>
+                            Contact Person Name
+                        </label>
+                        <input type="text" name="add_contact_name[]" class="form-input"
+                               placeholder="Enter contact person's full name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-phone"></i>
+                            Contact Number
+                        </label>
+                        <input type="tel" name="add_contact_number[]" class="form-input"
+                               placeholder="Enter phone number">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-envelope"></i>
+                            Email Address
+                        </label>
+                        <input type="email" name="add_contact_email[]" class="form-input"
+                               placeholder="Enter email address">
+                    </div>
+                </div>
+            `;
+            container.appendChild(row);
+            renumberContactRows();
+        }
+
+        function removeContact(btn) {
+            btn.closest('.additional-contact-row').remove();
+            renumberContactRows();
+        }
+
+        function renumberContactRows() {
+            const rows = document.querySelectorAll('.additional-contact-row');
+            rows.forEach(function(row, idx) {
+                const label = row.querySelector('.contact-row-label');
+                if (label) {
+                    label.innerHTML = `<i class="fas fa-user-plus"></i> Contact Person ${idx + 2}`;
                 }
             });
         }
@@ -850,6 +1051,80 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
         .alert-close:hover {
             background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Additional Contacts */
+        .optional-badge {
+            background: var(--gray-400);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .additional-contact-row {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-sm);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-row-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .contact-row-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        .remove-contact-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: var(--border-radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .remove-contact-btn:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .add-contact-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            background: rgba(59, 130, 246, 0.08);
+            color: var(--primary-color);
+            border: 1px dashed var(--primary-color);
+            border-radius: var(--border-radius-sm);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 0.5rem;
+        }
+
+        .add-contact-btn:hover {
+            background: rgba(59, 130, 246, 0.15);
         }
 
         /* Responsive */

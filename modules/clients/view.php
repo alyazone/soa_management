@@ -52,6 +52,17 @@ try {
     $soas = [];
 }
 
+// Fetch additional contacts for this client
+try {
+    $stmt = $pdo->prepare("SELECT * FROM client_contacts WHERE client_id = :id ORDER BY created_at ASC");
+    $stmt->bindParam(":id", $_GET["id"], PDO::PARAM_INT);
+    $stmt->execute();
+    $additional_contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch(PDOException $e) {
+    error_log("Additional contacts fetch error: " . $e->getMessage());
+    $additional_contacts = [];
+}
+
 // Fetch documents related to this client
 try {
     $stmt = $pdo->prepare("SELECT * FROM documents 
@@ -224,28 +235,55 @@ foreach($soas as $soa) {
                                 <label>Address</label>
                                 <value><?php echo nl2br(htmlspecialchars($client['address'])); ?></value>
                             </div>
-                            <div class="info-item">
-                                <label>PIC Name</label>
-                                <value><?php echo htmlspecialchars($client['pic_name']); ?></value>
-                            </div>
-                            <div class="info-item">
-                                <label>PIC Contact</label>
-                                <value>
+                            <div class="info-item full-width">
+                                <label>Primary Contact</label>
+                                <value class="contact-block">
+                                    <span class="contact-person-name">
+                                        <i class="fas fa-user"></i>
+                                        <?php echo htmlspecialchars($client['pic_name']); ?>
+                                    </span>
                                     <a href="tel:<?php echo htmlspecialchars($client['pic_contact']); ?>" class="contact-link">
                                         <i class="fas fa-phone"></i>
                                         <?php echo htmlspecialchars($client['pic_contact']); ?>
                                     </a>
-                                </value>
-                            </div>
-                            <div class="info-item">
-                                <label>PIC Email</label>
-                                <value>
                                     <a href="mailto:<?php echo htmlspecialchars($client['pic_email']); ?>" class="contact-link">
                                         <i class="fas fa-envelope"></i>
                                         <?php echo htmlspecialchars($client['pic_email']); ?>
                                     </a>
                                 </value>
                             </div>
+
+                            <?php if(!empty($additional_contacts)): ?>
+                            <div class="info-item full-width">
+                                <label>Additional Contacts</label>
+                                <value>
+                                    <div class="additional-contacts-list">
+                                        <?php foreach($additional_contacts as $idx => $contact): ?>
+                                        <div class="additional-contact-card">
+                                            <div class="additional-contact-title">
+                                                <i class="fas fa-user-plus"></i>
+                                                Contact Person <?php echo $idx + 2; ?>
+                                            </div>
+                                            <div class="additional-contact-details">
+                                                <span class="contact-person-name">
+                                                    <?php echo htmlspecialchars($contact['contact_name']); ?>
+                                                </span>
+                                                <a href="tel:<?php echo htmlspecialchars($contact['contact_number']); ?>" class="contact-link">
+                                                    <i class="fas fa-phone"></i>
+                                                    <?php echo htmlspecialchars($contact['contact_number']); ?>
+                                                </a>
+                                                <a href="mailto:<?php echo htmlspecialchars($contact['contact_email']); ?>" class="contact-link">
+                                                    <i class="fas fa-envelope"></i>
+                                                    <?php echo htmlspecialchars($contact['contact_email']); ?>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </value>
+                            </div>
+                            <?php endif; ?>
+
                             <div class="info-item">
                                 <label>Created At</label>
                                 <value><?php echo date('M d, Y H:i', strtotime($client['created_at'])); ?></value>
@@ -541,6 +579,52 @@ foreach($soas as $soa) {
         .contact-link:hover {
             color: var(--primary-dark);
             text-decoration: none;
+        }
+
+        .contact-block {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .contact-person-name {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            font-size: 0.875rem;
+        }
+
+        .additional-contacts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .additional-contact-card {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-sm);
+            padding: 0.875rem 1rem;
+        }
+
+        .additional-contact-title {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .additional-contact-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
         }
 
         /* Account Number */
