@@ -55,27 +55,29 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $pic_contact = trim($_POST["pic_contact"]);
     }
     
-    // Validate PIC email
-    if(empty(trim($_POST["pic_email"]))){
-        $pic_email_err = "Please enter PIC email.";
-    } elseif(!filter_var(trim($_POST["pic_email"]), FILTER_VALIDATE_EMAIL)){
-        $pic_email_err = "Please enter a valid email address.";
-    } else{
-        // Check if email already exists
-        try {
-            $stmt = $pdo->prepare("SELECT client_id FROM clients WHERE pic_email = :email");
-            $stmt->bindParam(":email", trim($_POST["pic_email"]), PDO::PARAM_STR);
-            $stmt->execute();
-            
-            if($stmt->rowCount() > 0){
-                $pic_email_err = "This email is already registered with another client.";
-            } else{
-                $pic_email = trim($_POST["pic_email"]);
+    // pic_email is optional — only validate format and uniqueness if provided
+    if(!empty(trim($_POST["pic_email"]))){
+        if(!filter_var(trim($_POST["pic_email"]), FILTER_VALIDATE_EMAIL)){
+            $pic_email_err = "Please enter a valid email address.";
+        } else{
+            // Check if email already exists
+            try {
+                $stmt = $pdo->prepare("SELECT client_id FROM clients WHERE pic_email = :email");
+                $stmt->bindParam(":email", trim($_POST["pic_email"]), PDO::PARAM_STR);
+                $stmt->execute();
+                
+                if($stmt->rowCount() > 0){
+                    $pic_email_err = "This email is already registered with another client.";
+                } else{
+                    $pic_email = trim($_POST["pic_email"]);
+                }
+            } catch(PDOException $e) {
+                error_log("Email check error: " . $e->getMessage());
+                $pic_email_err = "An error occurred while validating the email.";
             }
-        } catch(PDOException $e) {
-            error_log("Email check error: " . $e->getMessage());
-            $pic_email_err = "An error occurred while validating the email.";
         }
+    } else{
+        $pic_email = ""; // empty is allowed
     }
     
     // Validate additional contacts (optional, but if any field in a row is filled, all must be filled)
@@ -332,16 +334,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                 </div>
 
                                 <div class="form-group">
-                                    <label class="form-label required">
-                                        <i class="fas fa-envelope"></i>
-                                        Email Address
-                                    </label>
+                                    <label class="form-label"><i class="fas fa-envelope"></i> Email Address <span class="optional-badge">Optional</span></label>
                                     <input type="email"
                                            name="pic_email"
                                            class="form-input <?php echo (!empty($pic_email_err)) ? 'error' : ''; ?>"
                                            value="<?php echo htmlspecialchars($pic_email); ?>"
-                                           placeholder="Enter email address"
-                                           required>
+                                           placeholder="Enter email address">
                                     <?php if(!empty($pic_email_err)): ?>
                                         <span class="error-message">
                                             <i class="fas fa-exclamation-circle"></i>
@@ -624,10 +622,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     }
                     break;
                 case 'pic_email':
-                    if (value === '') {
-                        isValid = false;
-                        errorMessage = 'Email address is required.';
-                    } else if (!isValidEmail(value)) {
+                    // pic_email is optional — only validate format if a value is entered
+                    if (value !== '' && !isValidEmail(value)) {
                         isValid = false;
                         errorMessage = 'Please enter a valid email address.';
                     }

@@ -14,10 +14,11 @@ if(!$soa_id) { header("location: index.php"); exit; }
 
 try {
     $sql = "SELECT s.*, sup.supplier_name, sup.pic_name, sup.pic_contact, sup.pic_email, sup.address, 
-            st.full_name as created_by_name
+            st.full_name as created_by_name, COALESCE(po.po_number, s.manual_po_number) AS po_number
             FROM supplier_soa s 
             JOIN suppliers sup ON s.supplier_id = sup.supplier_id 
             LEFT JOIN staff st ON s.created_by = st.staff_id
+            LEFT JOIN purchase_orders po ON s.po_id = po.po_id
             WHERE s.soa_id = :soa_id";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([':soa_id' => $soa_id]);
@@ -138,6 +139,8 @@ $days_diff = (int)$today_obj->diff($due_date_obj)->format('%r%a');
                     <div class="info-body">
                         <div class="info-grid">
                             <div class="info-item"><label>Payment Method</label><value><?php echo htmlspecialchars($soa['payment_method'] ?: 'N/A'); ?></value></div>
+                            <div class="info-item"><label>Payment Date</label><value><?php echo !empty($soa['payment_date']) ? date('M d, Y', strtotime($soa['payment_date'])) : 'N/A'; ?></value></div>
+                            <div class="info-item"><label>Purchase Order (PO)</label><value><?php echo htmlspecialchars($soa['po_number'] ?: 'N/A'); ?></value></div>
                             <div class="info-item"><label>Created At</label><value><?php echo date('M d, Y H:i', strtotime($soa['created_at'])); ?></value></div>
                             <div class="info-item full-width"><label>Purchase Description</label><value><?php echo nl2br(htmlspecialchars($soa['purchase_description'])); ?></value></div>
                         </div>

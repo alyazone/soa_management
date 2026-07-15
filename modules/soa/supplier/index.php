@@ -11,9 +11,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION[
 
 try {
     $stmt = $pdo->query("
-        SELECT s.*, sup.supplier_name 
+        SELECT s.*, sup.supplier_name, COALESCE(po.po_number, s.manual_po_number) AS po_number
         FROM supplier_soa s 
         JOIN suppliers sup ON s.supplier_id = sup.supplier_id 
+        LEFT JOIN purchase_orders po ON s.po_id = po.po_id
         ORDER BY s.issue_date DESC
     ");
     $soas = $stmt->fetchAll();
@@ -56,7 +57,7 @@ try {
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: "Inter", sans-serif; background-color: var(--gray-50); color: var(--gray-900); line-height: 1.6; }
+        body { background-color: var(--gray-50); color: var(--gray-900); line-height: 1.6; }
         .main-content { margin-left: var(--sidebar-width); min-height: 100vh; transition: var(--transition); }
         .dashboard-header { background: white; border-bottom: 1px solid var(--gray-200); height: var(--header-height); position: sticky; top: 0; z-index: 40; }
         .header-content { display: flex; align-items: center; justify-content: space-between; height: 100%; padding: 0 2rem; }
@@ -88,7 +89,7 @@ try {
         .status-paid { background: rgba(16, 185, 129, 0.1); color: var(--success-color); }
         .status-pending { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
         .status-overdue { background: rgba(239, 68, 68, 0.1); color: var(--danger-color); }
-        .action-buttons { display: flex; gap: 0.5rem; }
+        .action-buttons { display: grid; grid-template-columns: repeat(2, 32px); gap: 0.5rem; justify-content: center; }
         .action-btn { width: 32px; height: 32px; border: none; border-radius: var(--border-radius-sm); display: inline-flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: var(--transition); text-decoration: none; }
         .action-btn-view { background-color: var(--info-color); } .action-btn-view:hover { background-color: #0891b2; }
         .action-btn-edit { background-color: var(--warning-color); } .action-btn-edit:hover { background-color: #d97706; }
@@ -138,12 +139,12 @@ try {
             <?php endif; ?>
 
             <div class="stats-grid">
-                <div class="stat-card primary"><div class="stat-icon"><i class="fas fa-file-invoice"></i></div><div class="stat-content"><h3><?php echo $summary['total_soas']; ?></h3><p>Total SOAs</p></div></div>
-                <div class="stat-card success"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-content"><h3><?php echo $summary['paid_count']; ?></h3><p>Paid</p></div></div>
-                <div class="stat-card warning"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-content"><h3><?php echo $summary['pending_count']; ?></h3><p>Pending</p></div></div>
-                <div class="stat-card danger"><div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div><div class="stat-content"><h3><?php echo $summary['overdue_count']; ?></h3><p>Overdue</p></div></div>
-                <div class="stat-card info"><div class="stat-icon"><i class="fas fa-dollar-sign"></i></div><div class="stat-content"><h3>RM <?php echo number_format($summary['total_amount'], 2); ?></h3><p>Total Amount</p></div></div>
-                <div class="stat-card danger"><div class="stat-icon"><i class="fas fa-hand-holding-usd"></i></div><div class="stat-content"><h3>RM <?php echo number_format($summary['outstanding_amount'], 2); ?></h3><p>Outstanding</p></div></div>
+                <div class="stat-card primary"><div class="stat-icon"><i class="fas fa-file-invoice"></i></div><div class="stat-content"><h3><?php echo $summary['total_soas'] ?? 'N/A'; ?></h3><p>Total SOAs</p></div></div>
+                <div class="stat-card success"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-content"><h3><?php echo $summary['paid_count'] ?? 'N/A'; ?></h3><p>Paid</p></div></div>
+                <div class="stat-card warning"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-content"><h3><?php echo $summary['pending_count'] ?? 'N/A'; ?></h3><p>Pending</p></div></div>
+                <div class="stat-card danger"><div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div><div class="stat-content"><h3><?php echo $summary['overdue_count'] ?? 'N/A'; ?></h3><p>Overdue</p></div></div>
+                <div class="stat-card info"><div class="stat-icon"><i class="fas fa-dollar-sign"></i></div><div class="stat-content"><h3>RM <?php echo number_format($summary['total_amount'], 2) ?? 'N/A'; ?></h3><p>Total Amount</p></div></div>
+                <div class="stat-card danger"><div class="stat-icon"><i class="fas fa-hand-holding-usd"></i></div><div class="stat-content"><h3>RM <?php echo number_format($summary['outstanding_amount'], 2) ?? 'N/A'; ?></h3><p>Outstanding</p></div></div>
             </div>
 
             <div class="table-card">
@@ -152,16 +153,37 @@ try {
                         <h3>Supplier SOA Ledger</h3>
                         <p>All supplier SOAs recorded in the system</p>
                     </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-truck"></i>
+                        <select name="filter_supplier" id="FilterSupplier" style="padding: 0.5rem; border-radius: var(--border-radius-sm); border: 1px solid var(--gray-300); outline: none; min-width: 200px;">
+                            <option value="">All Suppliers</option>
+                            <?php 
+                            $unique_suppliers = [];
+                            foreach($soas as $soa) {
+                                if (!isset($unique_suppliers[$soa['supplier_id']])) {
+                                    $unique_suppliers[$soa['supplier_id']] = $soa['supplier_name'];
+                                }
+                            }
+                            asort($unique_suppliers); // Sort by name alphabetically
+                            foreach($unique_suppliers as $id => $name): 
+                            ?>
+                                <option value="<?php echo htmlspecialchars($id); ?>"><?php echo htmlspecialchars($name); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="table-container">
                     <table class="modern-table">
                         <thead>
                             <tr>
-                                <th>Invoice #</th>
                                 <th>Supplier</th>
+                                <th>Invoice Supplier</th>
+                                <th>PO Kyrol</th>
+                                <th>Receipt Number</th>
                                 <th>Issue Date</th>
                                 <th>Due Date</th>
-                                <th>Amount</th>
+                                <th>Amount Total</th>
+                                <th>Amount Pending</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -169,12 +191,15 @@ try {
                         <tbody>
                             <?php if(!empty($soas)): ?>
                                 <?php foreach($soas as $soa): ?>
-                                <tr>
+                                <tr data-supplier-id="<?php echo htmlspecialchars($soa['supplier_id']); ?>">
+                                    <td><?php echo htmlspecialchars($soa['supplier_name']); ?></td>   
                                     <td><?php echo htmlspecialchars($soa['invoice_number']); ?></td>
-                                    <td><?php echo htmlspecialchars($soa['supplier_name']); ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($soa['issue_date'])); ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($soa['payment_due_date'])); ?></td>
+                                    <td><?php echo htmlspecialchars($soa['po_number'] ?: '-'); ?></td>
+                                    <td><?php echo htmlspecialchars($soa['receipt_number']); ?></td>
+                                    <td><?php echo date('d M Y', strtotime($soa['issue_date'])); ?></td>
+                                    <td><?php echo date('d M Y', strtotime($soa['payment_due_date'])); ?></td>
                                     <td>RM <?php echo number_format($soa['amount'], 2); ?></td>
+                                    <td>RM <?php echo number_format($soa['amount'] - $soa['amount_paid'], 2); ?></td>
                                     <td><span class="status-badge status-<?php echo strtolower($soa['payment_status']); ?>"><?php echo htmlspecialchars($soa['payment_status']); ?></span></td>
                                     <td>
                                         <div class="action-buttons">
@@ -187,7 +212,7 @@ try {
                                 </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="7" class="no-data"><div class="no-data-content"><i class="fas fa-file-invoice-dollar"></i><h3>No SOAs Found</h3><p>There are no supplier SOAs recorded yet.</p><a href="add.php" class="btn-primary"><i class="fas fa-plus"></i> Add First SOA</a></div></td></tr>
+                                <tr><td colspan="10" class="no-data"><div class="no-data-content"><i class="fas fa-file-invoice-dollar"></i><h3>No SOAs Found</h3><p>There are no supplier SOAs recorded yet.</p><a href="add.php" class="btn-primary"><i class="fas fa-plus"></i> Add First SOA</a></div></td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -201,6 +226,46 @@ try {
         document.addEventListener('DOMContentLoaded', function() {
             AOS.init({ duration: 800, easing: 'ease-in-out', once: true });
             initializeDashboard();
+
+            // Client-side filtering by Supplier Name
+            const filterSelect = document.getElementById('FilterSupplier');
+            const tableRows = document.querySelectorAll('.modern-table tbody tr');
+
+            filterSelect.addEventListener('change', function() {
+                const selectedSupplierId = this.value;
+                const isFiltered = selectedSupplierId !== "";
+
+                // Hide or show the Supplier column header (1st column)
+                const supplierTh = document.querySelector('.modern-table thead th:nth-child(1)');
+                if (supplierTh) {
+                    supplierTh.style.display = isFiltered ? 'none' : '';
+                }
+
+                tableRows.forEach(row => {
+                    // Skip the "No data" row if it exists
+                    if (row.querySelector('.no-data')) {
+                        const noDataTd = row.querySelector('.no-data');
+                        if (noDataTd) noDataTd.setAttribute('colspan', isFiltered ? "9" : "10");
+                        return;
+                    }
+
+                    // Read the ID directly from our data attribute
+                    const rowSupplierId = row.dataset.supplierId;
+                    
+                    if (rowSupplierId) {
+                        if (!isFiltered || rowSupplierId === selectedSupplierId) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    }
+
+                    // Hide or show the Supplier cell (1st column)
+                    if (row.cells.length > 1) {
+                        row.cells[0].style.display = isFiltered ? 'none' : '';
+                    }
+                });
+            });
         });
     </script>
 </body>

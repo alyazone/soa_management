@@ -12,20 +12,15 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     exit;
 }
 
+// For staff's selection list.
 $staff_id = $_SESSION['staff_id'];
-$staff_name = $_SESSION['full_name'] ?? 'User';
 
-// Get staff details
 try {
-    $stmt = $pdo->prepare("SELECT * FROM staff WHERE staff_id = ?");
-    $stmt->execute([$staff_id]);
-    $staff = $stmt->fetch(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    die("Error: " . $e->getMessage());
+    $staff = $pdo->query("SELECT staff_id, full_name, department FROM staff WHERE staff_id = $staff_id")->fetch();
+} catch(PDOException $e) {
+    error_log("Error fetching staff list in application_form.php: " . $e->getMessage());
+    $staff = [];
 }
-
-// Generate application number
-$app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
 ?>
 
 <!DOCTYPE html>
@@ -33,7 +28,7 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Outstation Application - SOA Management System</title>
+    <title>New Leave Application - SOA Management System</title>
 
     <!-- Modern CSS Framework -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -58,14 +53,14 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="header-title">
-                        <h1>New Outstation Application</h1>
-                        <p>Submit your outstation leave request</p>
+                        <h1>New Leave Application</h1>
+                        <p>Submit a leave application</p>
                     </div>
                 </div>
                 <div class="header-right">
-                    <a href="index.php" class="date-picker-btn">
+                    <a href="view_me.php?id=<?= $_SESSION['staff_id'] ?>" class="date-picker-btn">
                         <i class="fas fa-arrow-left"></i>
-                        Back to List
+                        Back
                     </a>
                 </div>
             </div>
@@ -80,7 +75,7 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
                 </div>
                 <div class="info-card-content">
                     <h4>Application Guidelines</h4>
-                    <p>Please complete this form before proceeding with your outstation trip. If your stay is for <strong>two nights or more</strong>, you will be eligible to claim outstation leave allowance upon return.</p>
+                    <p>Please enter a valid amount of leave days.</p>
                 </div>
             </div>
 
@@ -88,16 +83,11 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
             <div class="table-card" data-aos="fade-up" data-aos-delay="100">
                 <div class="table-header">
                     <div class="table-title">
-                        <h3>Outstation Leave Application</h3>
-                        <p>Application No: <strong class="app-number-text"><?php echo $app_number; ?></strong></p>
+                        <h3>Leave Application</h3>
                     </div>
                 </div>
 
-                <form id="outstationForm" method="POST" action="api/create_application.php" class="form-container">
-                    <input type="hidden" name="application_number" value="<?php echo $app_number; ?>">
-                    <input type="hidden" name="staff_id" value="<?php echo $staff_id; ?>">
-                    <input type="hidden" name="total_nights" id="total_nights" value="0">
-                    <input type="hidden" name="is_claimable" id="is_claimable" value="0">
+                <form id="leaveForm" method="POST" action="api/create_application.php" class="form-container">
 
                     <!-- Staff Information Section -->
                     <div class="form-section">
@@ -107,102 +97,72 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
                         </div>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label class="form-label">Staff Name</label>
-                                <input type="text" class="form-input" value="<?php echo htmlspecialchars($staff_name); ?>" disabled>
+                                <label class="form-label">Staff Name<span class="required">*</span></label>
+                                <select name="staff_id" id="staff_id" class="form-input" required>
+                                    <option value="<?php echo $staff['staff_id']; ?>" <?php echo ($staff['staff_id']) ? 'selected' : ''; ?> department="<?php echo htmlspecialchars($staff['department']); ?>">
+                                        <?php echo htmlspecialchars($staff['full_name']); ?>
+                                    </option>
+                            </select>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Department</label>
-                                <input type="text" class="form-input" value="<?php echo htmlspecialchars($staff['department'] ?? 'N/A'); ?>" disabled>
+                                <input type="text" class="form-input" id="department_input" value="<?php echo htmlspecialchars($staff['department']); ?>" readonly>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Trip Details Section -->
+                    <!-- Leave Details Section -->
                     <div class="form-section">
                         <div class="form-section-title">
-                            <i class="fas fa-plane-departure"></i>
-                            <span>Trip Details</span>
+                            <span>Leave Details</span>
                         </div>
 
                         <div class="form-grid">
                             <div class="form-group">
-                                <label class="form-label">Purpose of Trip <span class="required">*</span></label>
-                                <select name="purpose" id="purpose" class="form-input" required>
-                                    <option value="">-- Select Purpose --</option>
-                                    <option value="Client Meeting">Client Meeting</option>
-                                    <option value="Site Visit">Site Visit</option>
-                                    <option value="Training/Workshop">Training/Workshop</option>
-                                    <option value="Business Conference">Business Conference</option>
-                                    <option value="Project Work">Project Work</option>
-                                    <option value="Maintenance">Maintenance</option>
-                                    <option value="Other">Other</option>
+                                <label class="form-label">Leave Reason<span class="required">*</span></label>
+                                <select name="leave_reason" id="leave_reason" class="form-input" required>
+                                    <option value="">-- Select Reason --</option>
+                                    <option value="AL">Annual Leave</option>
+                                    <option value="EL">Emergency Leave</option>
+                                    <option value="ML">Medical Leave</option>
+                                    <option value="OL">Outstation Leave</option>
+                                    <option value="BL">Birthday Leave</option>
+                                    <option value="CL">Carryforward Leave</option>
+                                    <option value="CPL">Paternal Leave</option>
+                                    <option value="CML">Maternal Leave</option>
+                                    <option value="SML">Special Marriage Leave</option>
+                                    <option value="SHL">Special Umrah/Haji Leave</option>
+                                    <option value="HL">Hospitalization Leave</option>
+                                    <option value="ILL">Leave In Lieu</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Destination <span class="required">*</span></label>
-                                <input type="text" name="destination" id="destination" class="form-input" placeholder="e.g., Kuala Lumpur, Johor Bahru" required>
-                            </div>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label class="form-label">Purpose Details / Activities <span class="required">*</span></label>
-                            <textarea name="purpose_details" id="purpose_details" class="form-input form-textarea" placeholder="Please explain the purpose of your trip and describe the activities you will be doing..." required></textarea>
-                        </div>
-
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label">Departure Date <span class="required">*</span></label>
-                                <input type="date" name="departure_date" id="departure_date" class="form-input" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Departure Time</label>
-                                <input type="time" name="departure_time" id="departure_time" class="form-input">
+                                <label class="form-label">Leaves Available</label>
+                                <span id="leave_amount" class="leave-amount-tag">N/A</span>
                             </div>
                         </div>
 
                         <div class="form-grid">
                             <div class="form-group">
-                                <label class="form-label">Return Date <span class="required">*</span></label>
-                                <input type="date" name="return_date" id="return_date" class="form-input" required>
+                                <label class="form-label">Start Date <span class="required">*</span></label>
+                                <input type="date" name="start_date" id="start_date" class="form-input" required>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Return Time</label>
-                                <input type="time" name="return_time" id="return_time" class="form-input">
+                                <label class="form-label">End Date <span class="required">*</span></label>
+                                <input type="date" name="end_date" id="end_date" class="form-input" required>
                             </div>
                         </div>
 
                         <div class="form-grid">
                             <div class="form-group">
-                                <label class="form-label">Transportation Mode <span class="required">*</span></label>
-                                <select name="transportation_mode" id="transportation_mode" class="form-input" required>
-                                    <option value="">-- Select Transportation --</option>
-                                    <option value="Company Vehicle">Company Vehicle</option>
-                                    <option value="Personal Vehicle">Personal Vehicle</option>
-                                    <option value="Flight">Flight</option>
-                                    <option value="Train">Train</option>
-                                    <option value="Bus">Bus</option>
-                                    <option value="Other">Other</option>
-                                </select>
+                                <label class="form-label">Total Days<span class="required">*</span></label>
+                                <input type="number" name="total_day" id="total_day" class="form-input" min="0" placeholder="0">
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Estimated Cost (RM)</label>
-                                <input type="number" name="estimated_cost" id="estimated_cost" class="form-input" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label class="form-label">Accommodation Details</label>
-                            <textarea name="accommodation_details" id="accommodation_details" class="form-input form-textarea" placeholder="Enter hotel name, address, or accommodation details..."></textarea>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label class="form-label">Additional Remarks</label>
-                            <textarea name="remarks" id="remarks" class="form-input form-textarea" placeholder="Any additional information..."></textarea>
                         </div>
                     </div>
 
                     <!-- Calculation Result -->
-                    <div class="calculation-card" id="calculationResult" style="display: none;">
+                    <div class="calculation-card" id="calculationResult" style="display:none">
                         <div class="calculation-header">
                             <i class="fas fa-calculator"></i>
                             <span>Calculation Summary</span>
@@ -210,50 +170,33 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
 
                         <div class="calculation-body">
                             <div class="calculation-row">
-                                <span class="calculation-label">Departure Date:</span>
-                                <span class="calculation-value" id="display_departure">-</span>
+                                <span class="calculation-label">Start Date:</span>
+                                <span class="calculation-value" id="display_start">-</span>
                             </div>
                             <div class="calculation-row">
-                                <span class="calculation-label">Return Date:</span>
-                                <span class="calculation-value" id="display_return">-</span>
+                                <span class="calculation-label">End Date:</span>
+                                <span class="calculation-value" id="display_end">-</span>
                             </div>
                             <div class="calculation-row">
-                                <span class="calculation-label">Total Nights:</span>
-                                <span class="calculation-value" id="display_nights">0</span>
-                            </div>
-                            <div class="calculation-row highlight">
-                                <span class="calculation-label">Claimable Status:</span>
-                                <span class="calculation-value" id="display_claimable">
-                                    <span class="claimable-badge no"><i class="fas fa-times"></i> Not Claimable</span>
-                                </span>
+                                <span class="calculation-label">Leave Remaining:</span>
+                                <span class="calculation-value" id="display_days">-</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Claimable Info Messages -->
-                    <div id="claimableInfo" class="alert alert-success" style="display: none;" data-aos="fade-up">
-                        <div class="alert-content">
-                            <i class="fas fa-check-circle"></i>
-                            <div>
-                                <strong>Eligible for Outstation Leave Claim</strong>
-                                <p>Your trip qualifies for outstation leave allowance. You can submit a claim after completing your trip.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="notClaimableInfo" class="alert alert-warning" style="display: none;" data-aos="fade-up">
+                    <div id="display_info" class="alert alert-warning" style="display:none" data-aos="fade-up">
                         <div class="alert-content">
                             <i class="fas fa-exclamation-triangle"></i>
                             <div>
-                                <strong>Not Eligible for Claim</strong>
-                                <p>Trips with less than 2 nights stay are not eligible for outstation leave claims. This application will be recorded for tracking purposes only.</p>
+                                <strong>Insufficient Leave Balance</strong>
+                                <p>Leave days requested exceed the amount of leave remaining. You must adjust your request to continue.</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Submit Buttons -->
                     <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="window.location.href='index.php'">
+                        <button type="button" class="btn-secondary" onclick="window.location.href='view_me.php?id=<?php echo $_SESSION['staff_id'] ?>'">
                             <i class="fas fa-times"></i>
                             Cancel
                         </button>
@@ -273,111 +216,179 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize AOS animations
-            AOS.init({
-                duration: 800,
-                easing: 'ease-in-out',
-                once: true
+            // Initialize AOS
+            AOS.init({ duration: 800, easing: 'ease-in-out', once: true });
+
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
+            const staffSelect = document.getElementById('staff_id');
+            const infoDiv = document.getElementById('leave_amount');
+            const leaveCalc = document.getElementById('display_days')
+            const totalDayInput = document.getElementById('total_day');
+            const leaveReasonSelect = document.getElementById('leave_reason');
+            const startDateInfo = document.getElementById('display_start');
+            const endDateInfo = document.getElementById('display_end');
+            const insufficientInfo = document.getElementById('display_info');
+            const calculationInfo = document.getElementById('calculationResult');
+            // 1. Function to fetch data and update the balance display
+            function updateLeaveBalance() {
+                const staffId = staffSelect.value;
+                const requestedDays = parseInt(totalDayInput.value) || 0;
+
+                if (!staffId) {
+                    infoDiv.innerHTML = "0";
+                    return;
+                }
+
+                fetch(`api/get_availability_data.php?staff_id=${staffId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data) { 
+                            
+                            // 1. The Mapping Object (Easy to add more leave types here!)
+                            const leaveMap = {
+                                "AL": { key: "annual_leave", label: "Annual" },
+                                "EL": { key: "emergency_leave", label: "Emergency" },
+                                "ML": { key: "medical_leave", label: "Medical" },
+                                "OL": { key: "outstation_leave", label: "Outstation" },
+                                "BL": { key: "birthday_leave", label: "Birthday" },
+                                "CL": { key: "carryforward_leave", label: "Carryforward" },
+                                "CPL": { key: "paternal_leave", label: "Paternal" },
+                                "CML": { key: "maternal_leave", label: "Maternal" },
+                                "SML": { key: "marriage_leave", label: "Marriage" },
+                                "SHL": { key: "umrah_haji_leave", label: "Umrah/Haji" },
+                                "HL": { key: "hospitalization_leave", label: "Hospitalization" },
+                                "ILL": { key: "in_lieu_leave", label: "In Lieu" }
+                            };
+
+                            // 2. Look up the selected leave type
+                            const config = leaveMap[leaveReasonSelect.value];
+                            let remaining = 0;
+
+                            // 3. Calculate and update if a valid type was selected
+                            if (config) {
+                                // It uses the config.key to dynamically grab the right data property
+                                remaining = data[config.key] - requestedDays;
+                                leaveCalc.textContent = `${remaining} (${config.label})`;
+                            }
+
+                            // 4. Update the summary UI
+                            infoDiv.innerHTML = 
+                                `Annual: ${data.annual_leave} | 
+                                Emergency: ${data.emergency_leave} | 
+                                Medical: ${data.medical_leave} | 
+                                Outstation: ${data.outstation_leave} |
+                                Birthday: ${data.birthday_leave} |
+                                Carryforward: ${data.carryforward_leave}<br>
+                                Paternal: ${data.paternal_leave} | 
+                                Maternal: ${data.maternal_leave} | 
+                                Marriage: ${data.marriage_leave} |
+                                Umrah/Haji: ${data.umrah_haji_leave} |
+                                Hospitalization: ${data.hospitalization_leave} | 
+                                In Lieu: ${data.in_lieu_leave}`;
+
+                            // 5. Update Visibility
+                            if (staffSelect) {
+                                calculationInfo.style.display = "block";
+                                
+                                // We can now use the 'remaining' variable directly 
+                                // instead of parsing 'leaveCalc.textContent' again!
+                                if (remaining < 0) {
+                                    insufficientInfo.style.display = "block";
+                                } else {
+                                    insufficientInfo.style.display = "none";
+                                }
+                            } else {
+                                calculationInfo.style.display = "none";
+                                insufficientInfo.style.display = "none";
+                            }
+                        }
+                    })
+                    .catch(err => console.error('Error fetching availability:', err));
+            }
+
+            // 2. Date Calculation Logic
+            function calculateDays() {
+                const startD = new Date(startDateInput.value);
+                const endD = new Date(endDateInput.value);
+
+                if (startDateInput.value && endDateInput.value) {
+                    const diffTime = endD - startD;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                    if (diffDays < 0) {
+                        alert('End date cannot be earlier than start date!');
+                        endDateInput.value = '';
+                        return;
+                    }
+                    
+                    totalDayInput.placeholder = diffDays;
+                }
+            }
+
+            // 3. Event Listeners
+            startDateInput.addEventListener('change', function() {
+                endDateInput.setAttribute('min', this.value);
+                if (endDateInput.value && endDateInput.value < this.value) {
+                    endDateInput.value = this.value;
+                }
+                calculateDays();
+                const selectedDate = this.value;
+                if (selectedDate) {
+                    const dateObj = new Date(selectedDate);
+                    
+                    const formattedDate = dateObj.toLocaleDateString('en-MY', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+
+                    startDateInfo.textContent = formattedDate;
+                } else {
+                    startDateInfo.textContent = "-";
+                }
             });
 
-            // Initialize dashboard
-            initializeDashboard();
+            endDateInput.addEventListener('change', function() {
+                calculateDays();                    
+                const selectedDate = this.value;
+                if (selectedDate) {
+                    const dateObj = new Date(selectedDate);
+                    
+                    const formattedDate = dateObj.toLocaleDateString('en-MY', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
 
-            const departureDateInput = document.getElementById('departure_date');
-            const returnDateInput = document.getElementById('return_date');
-
-            // Set minimum date to today
-            const today = new Date().toISOString().split('T')[0];
-			// Updated: removed the line that check date today (iskh: 8:04AM 7/4/26)
-            //departureDateInput.setAttribute('min', today);
-
-            // Update return date minimum when departure date changes
-			// Updated to allow back-date (iskh: 8:04AM 7/4/26)
-            departureDateInput.addEventListener('change', function() {
-    calculateNights();
-});
-
-            returnDateInput.addEventListener('change', calculateNights);
-
-            function calculateNights() {
-                const departureDate = departureDateInput.value;
-                const returnDate = returnDateInput.value;
-
-                if (!departureDate || !returnDate) {
-                    hideCalculation();
-                    return;
-                }
-
-                const departure = new Date(departureDate);
-                const returnD = new Date(returnDate);
-
-                // Calculate difference in days
-                const diffTime = returnD - departure;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                if (diffDays < 0) {
-                    hideCalculation();
-                    alert('Return date cannot be earlier than departure date!');
-                    returnDateInput.value = '';
-                    return;
-                }
-
-                // Update hidden fields
-                document.getElementById('total_nights').value = diffDays;
-                document.getElementById('is_claimable').value = diffDays >= 2 ? '1' : '0';
-
-                // Update display
-                showCalculation(departureDate, returnDate, diffDays);
-            }
-
-            function showCalculation(departure, returnDate, nights) {
-                const calculationResult = document.getElementById('calculationResult');
-                const claimableInfo = document.getElementById('claimableInfo');
-                const notClaimableInfo = document.getElementById('notClaimableInfo');
-
-                // Format dates for display
-                const departureFormatted = new Date(departure).toLocaleDateString('en-MY', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-                const returnFormatted = new Date(returnDate).toLocaleDateString('en-MY', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-
-                // Update display values
-                document.getElementById('display_departure').textContent = departureFormatted;
-                document.getElementById('display_return').textContent = returnFormatted;
-                document.getElementById('display_nights').textContent = nights + ' night' + (nights !== 1 ? 's' : '');
-
-                // Update claimable status
-                const isClaimable = nights >= 2;
-                const claimableDisplay = document.getElementById('display_claimable');
-
-                if (isClaimable) {
-                    claimableDisplay.innerHTML = '<span class="claimable-badge yes"><i class="fas fa-check"></i> Claimable</span>';
-                    claimableInfo.style.display = 'block';
-                    notClaimableInfo.style.display = 'none';
+                    endDateInfo.textContent = formattedDate;
                 } else {
-                    claimableDisplay.innerHTML = '<span class="claimable-badge no"><i class="fas fa-times"></i> Not Claimable</span>';
-                    claimableInfo.style.display = 'none';
-                    notClaimableInfo.style.display = 'block';
+                    endDateInfo.textContent = "-";
                 }
 
-                calculationResult.style.display = 'block';
-            }
-
-            function hideCalculation() {
-                document.getElementById('calculationResult').style.display = 'none';
-                document.getElementById('claimableInfo').style.display = 'none';
-                document.getElementById('notClaimableInfo').style.display = 'none';
-            }
-
+            });
+            totalDayInput.addEventListener('input', updateLeaveBalance);
+            leaveReasonSelect.addEventListener('change',updateLeaveBalance);
+            staffSelect.addEventListener('change', function() {
+                // Update department immediately
+                const selectedOption = this.options[this.selectedIndex];
+                document.getElementById('department_input').value = selectedOption.getAttribute('department') || 'N/A';
+                
+                // Fetch and calculate balance
+                updateLeaveBalance();
+            });
             // Form submission
-            document.getElementById('outstationForm').addEventListener('submit', function(e) {
+            document.getElementById('leaveForm').addEventListener('submit', function(e) {
                 e.preventDefault();
+
+                // 1. Check for insufficient balance before submitting
+                const remainingText = leaveCalc.textContent;
+                const remainingValue = parseInt(remainingText);
+
+                if (remainingValue < 0) {
+                    alert("Error: Insufficient leave balance. You cannot apply for more days than available.");
+                    return;
+                }
 
                 const submitBtn = document.getElementById('submitBtn');
                 submitBtn.disabled = true;
@@ -393,7 +404,7 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
                 .then(data => {
                     if (data.success) {
                         alert('Application submitted successfully!');
-                        window.location.href = 'index.php?success=created';
+                        window.location.href = 'view_me.php?id=<?php echo $staff_id; ?>&success=created';
                     } else {
                         alert('Error: ' + data.message);
                         submitBtn.disabled = false;
@@ -404,9 +415,13 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
                     console.error('Error:', error);
                     alert('An error occurred. Please try again.');
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
                 });
             });
+
+            // Initial fetch to show current balances immediately on load
+            if (staffSelect && staffSelect.value) {
+                updateLeaveBalance();
+            }
         });
     </script>
 
@@ -423,6 +438,18 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
             gap: 1rem;
             align-items: flex-start;
             border-left: 4px solid var(--primary-color);
+        }
+        .leave-amount-tag {
+            display: inline-block; 
+            width: max-content;    
+            min-width: 40px;       
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--gray-700);
+            padding: 0.25rem 0.75rem;
+            background: var(--gray-100);
+            border-radius: 4px;
+            font-weight: 600;
         }
 
         .info-card-icon {
@@ -449,11 +476,6 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
             color: var(--gray-600);
             margin: 0;
             line-height: 1.5;
-        }
-
-        .app-number-text {
-            font-family: 'Courier New', monospace;
-            color: var(--primary-color);
         }
 
         .form-container {
@@ -593,26 +615,6 @@ $app_number = 'OSL-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_
             font-size: 0.875rem;
             font-weight: 600;
             color: var(--gray-900);
-        }
-
-        .claimable-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.375rem;
-            padding: 0.375rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .claimable-badge.yes {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success-color);
-        }
-
-        .claimable-badge.no {
-            background: rgba(107, 114, 128, 0.1);
-            color: var(--gray-500);
         }
 
         /* Alert Styles */

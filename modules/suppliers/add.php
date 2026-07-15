@@ -9,8 +9,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION[
     exit;
 }
 
-$supplier_name = $address = $pic_name = $pic_contact = $pic_email = "";
-$supplier_name_err = $address_err = $pic_name_err = $pic_contact_err = $pic_email_err = "";
+$supplier_name = $address = $pic_name = $pic_contact = $pic_email = $bank_name = $account_number = "";
+$supplier_name_err = $address_err = $pic_name_err = $pic_contact_err = $pic_email_err = $bank_name_err = $account_number_err = "";
 $additional_contacts = [];
 $has_contact_err = false;
 
@@ -26,6 +26,18 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     } else{
         $address = trim($_POST["address"]);
     }
+    // Bank Name validation
+    if(empty(trim($_POST["bank_name"]))){
+        $bank_name_err = "Please enter bank name.";
+    } else{
+        $bank_name = trim($_POST["bank_name"]);
+    }
+    // Account Number validation
+    if(empty(trim($_POST["account_number"]))){
+        $account_number_err = "Please enter account number.";
+    } else{
+        $account_number = trim($_POST["account_number"]);
+    }
     
     if(empty(trim($_POST["pic_name"]))){
         $pic_name_err = "Please enter PIC name.";
@@ -33,31 +45,34 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $pic_name = trim($_POST["pic_name"]);
     }
     
-    if(empty(trim($_POST["pic_contact"]))){
-        $pic_contact_err = "Please enter PIC contact.";
-    } else{
+    if(!empty(trim($_POST["pic_contact"]))){
         $pic_contact = trim($_POST["pic_contact"]);
+    } else {
+        $pic_contact = ""; // optional field
     }
     
-    if(empty(trim($_POST["pic_email"]))){
-        $pic_email_err = "Please enter PIC email.";
-    } elseif(!filter_var(trim($_POST["pic_email"]), FILTER_VALIDATE_EMAIL)){
-        $pic_email_err = "Please enter a valid email address.";
-    } else{
-        try {
-            $stmt = $pdo->prepare("SELECT supplier_id FROM suppliers WHERE pic_email = :email");
-            $stmt->bindParam(":email", trim($_POST["pic_email"]), PDO::PARAM_STR);
-            $stmt->execute();
-            
-            if($stmt->rowCount() > 0){
-                $pic_email_err = "This email is already registered with another supplier.";
-            } else{
-                $pic_email = trim($_POST["pic_email"]);
+    // pic_email is optional — only validate format and uniqueness if provided
+    if(!empty(trim($_POST["pic_email"]))){
+        if(!filter_var(trim($_POST["pic_email"]), FILTER_VALIDATE_EMAIL)){
+            $pic_email_err = "Please enter a valid email address.";
+        } else{
+            try {
+                $stmt = $pdo->prepare("SELECT supplier_id FROM suppliers WHERE pic_email = :email");
+                $stmt->bindParam(":email", trim($_POST["pic_email"]), PDO::PARAM_STR);
+                $stmt->execute();
+                
+                if($stmt->rowCount() > 0){
+                    $pic_email_err = "This email is already registered with another supplier.";
+                } else{
+                    $pic_email = trim($_POST["pic_email"]);
+                }
+            } catch(PDOException $e) {
+                error_log("Email check error: " . $e->getMessage());
+                $pic_email_err = "An error occurred while validating the email.";
             }
-        } catch(PDOException $e) {
-            error_log("Email check error: " . $e->getMessage());
-            $pic_email_err = "An error occurred while validating the email.";
         }
+    } else{
+        $pic_email = ""; // empty is allowed
     }
     
     // Validate additional contacts
@@ -89,7 +104,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         try {
             $pdo->beginTransaction();
 
-            $sql = "INSERT INTO suppliers (supplier_name, address, pic_name, pic_contact, pic_email) VALUES (:supplier_name, :address, :pic_name, :pic_contact, :pic_email)";
+            $sql = "INSERT INTO suppliers (supplier_name, address, pic_name, pic_contact, pic_email, bank_name, account_number) VALUES (:supplier_name, :address, :pic_name, :pic_contact, :pic_email, :bank_name, :account_number)";
 
             if($stmt = $pdo->prepare($sql)){
                 $stmt->bindParam(":supplier_name", $param_supplier_name, PDO::PARAM_STR);
@@ -97,12 +112,16 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 $stmt->bindParam(":pic_name", $param_pic_name, PDO::PARAM_STR);
                 $stmt->bindParam(":pic_contact", $param_pic_contact, PDO::PARAM_STR);
                 $stmt->bindParam(":pic_email", $param_pic_email, PDO::PARAM_STR);
+                $stmt->bindParam(":bank_name", $param_bank_name, PDO::PARAM_STR);
+                $stmt->bindParam(":account_number", $param_account_number, PDO::PARAM_STR);
 
                 $param_supplier_name = $supplier_name;
                 $param_address = $address;
                 $param_pic_name = $pic_name;
                 $param_pic_contact = $pic_contact;
                 $param_pic_email = $pic_email;
+                $param_bank_name = $bank_name;
+                $param_account_number = $account_number;
 
                 if($stmt->execute()){
                     $new_supplier_id = $pdo->lastInsertId();
@@ -224,7 +243,23 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                     <textarea name="address" class="form-textarea <?php echo (!empty($address_err)) ? 'error' : ''; ?>" rows="3" placeholder="Enter complete address" required><?php echo htmlspecialchars($address); ?></textarea>
                                     <?php if(!empty($address_err)): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $address_err; ?></span><?php endif; ?>
                                     <small class="form-help">Include street address, city, state/province, and postal code</small>
-                                </div>
+</div>
+<div class="form-group full-width">
+  <label class="form-label">
+    <i class="fas fa-university"></i>
+    Bank Name
+  </label>
+  <input type="text" name="bank_name" class="form-input <?php echo (!empty($bank_name_err)) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($bank_name); ?>" placeholder="Enter bank name" required>
+  <?php if(!empty($bank_name_err)): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $bank_name_err; ?></span><?php endif; ?>
+</div>
+<div class="form-group full-width">
+  <label class="form-label">
+    <i class="fas fa-credit-card"></i>
+    Account Number
+  </label>
+  <input type="text" name="account_number" class="form-input <?php echo (!empty($account_number_err)) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($account_number); ?>" placeholder="Enter account number" required>
+  <?php if(!empty($account_number_err)): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $account_number_err; ?></span><?php endif; ?>
+</div>
                             </div>
                         </div>
 
@@ -241,12 +276,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label required"><i class="fas fa-phone"></i> Contact Number</label>
-                                    <input type="tel" name="pic_contact" class="form-input <?php echo (!empty($pic_contact_err)) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($pic_contact); ?>" placeholder="Enter phone number" required>
+                                    <input type="tel" name="pic_contact" class="form-input <?php echo (!empty($pic_contact_err)) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($pic_contact); ?>" placeholder="Enter phone number">
                                     <?php if(!empty($pic_contact_err)): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $pic_contact_err; ?></span><?php endif; ?>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label required"><i class="fas fa-envelope"></i> Email Address</label>
-                                    <input type="email" name="pic_email" class="form-input <?php echo (!empty($pic_email_err)) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($pic_email); ?>" placeholder="Enter email address" required>
+                                    <label class="form-label"><i class="fas fa-envelope"></i> Email Address <span class="optional-badge">Optional</span></label>
+                                    <input type="email" name="pic_email" class="form-input <?php echo (!empty($pic_email_err)) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($pic_email); ?>" placeholder="Enter email address">
                                     <?php if(!empty($pic_email_err)): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $pic_email_err; ?></span><?php endif; ?>
                                 </div>
                             </div>
@@ -401,8 +436,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     else if (!/^[\d\s\-\+()]+$/.test(value)) { isValid = false; errorMessage = 'Please enter a valid phone number.'; }
                     break;
                 case 'pic_email':
-                    if (value === '') { isValid = false; errorMessage = 'Email address is required.'; }
-                    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { isValid = false; errorMessage = 'Please enter a valid email address.'; }
+                    // pic_email is optional — only validate format if a value is entered
+                    if (value !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { isValid = false; errorMessage = 'Please enter a valid email address.'; }
                     break;
             }
 

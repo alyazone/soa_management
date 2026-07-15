@@ -267,8 +267,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                     <?php if(!empty($pic_contact_err)): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $pic_contact_err; ?></span><?php endif; ?>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label required"><i class="fas fa-envelope"></i> Email Address</label>
-                                    <input type="email" name="pic_email" class="form-input <?php echo (!empty($pic_email_err)) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($pic_email); ?>" required>
+                                    <label class="form-label"><i class="fas fa-envelope"></i> Email Address</label>
+                                    <input type="email" name="pic_email" class="form-input <?php echo (!empty($pic_email_err)) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($pic_email); ?>">
                                     <?php if(!empty($pic_email_err)): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $pic_email_err; ?></span><?php endif; ?>
                                 </div>
                             </div>

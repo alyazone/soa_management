@@ -56,12 +56,23 @@ try {
                 approved_at = CURRENT_TIMESTAMP
                 WHERE application_id = :application_id";
 
+
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':approved_by' => $_SESSION['staff_id'],
             ':application_id' => $application_id
         ]);
+        if($app['is_claimable']){
+            //update outstation_leave to increase by 1
+            $update_sql = "UPDATE leave_availability 
+                    SET outstation_leave = outstation_leave + 1 
+                    WHERE staff_id = :staff_id";
 
+            $updateStmt = $pdo->prepare($update_sql);
+            $updateStmt->execute([
+                ':staff_id' => $app['staff_id']
+            ]);
+        }
         $pdo->commit();
         header("Location: ../view.php?id=$application_id&success=approved");
 

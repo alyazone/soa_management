@@ -142,6 +142,47 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 
                 // Attempt to execute the prepared statement
                 if($stmt->execute()){
+                    //Get the ID of the staff we just created
+                    $new_staff_id = $pdo->lastInsertId();
+
+                    //Prepare the statement to initialize leave balances
+                    $sql_availability = "INSERT INTO leave_availability 
+                                        (staff_id, annual_leave, emergency_leave, medical_leave, outstation_leave, birthday_leave, carryforward_leave, paternal_leave, maternal_leave, marriage_leave, umrah_haji_leave, hospitalization_leave, in_lieu_leave) 
+                                        VALUES (:staff_id, :al, :el, :ml, :ol, :bl, :cl, :cpl, :cml, :sml, :shl, :hl, :ill)";
+
+                    if($stmt_avail = $pdo->prepare($sql_availability)){
+                        // Set your default starting values here
+                        $default_al = 0;  // Annual Leave (starts at 0, +1 per month)
+                        $default_el = 3;  // Emergency Leave
+                        $default_ml = 14; // Medical Leave
+                        $default_ol = 0;  // Outstation Leave ( +1 every is_claimable true)
+                        $default_bl = 1;  // Birthday Leave
+                        $default_cl = 0;  // Carryforward Leave
+                        $default_cpl = 3;  // Compassionate Paternal Leave
+                        $default_cml = 60;  // Compassionate Maternal Leave
+                        $default_sml = 3;  // Special Marriage Leave
+                        $default_shl = 5;  // Special Umrah/Haji Leave
+                        $default_hl = 60;  // Hospitalization Leave
+                        $default_ill = 0;  // in Lieu Leave
+
+                        $stmt_avail->bindParam(":staff_id", $new_staff_id, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":al", $default_al, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":el", $default_el, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":ml", $default_ml, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":ol", $default_ol, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":bl", $default_bl, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":cl", $default_cl, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":cpl", $default_cpl, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":cml", $default_cml, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":sml", $default_sml, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":shl", $default_shl, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":hl", $default_hl, PDO::PARAM_INT);
+                        $stmt_avail->bindParam(":ill", $default_ill, PDO::PARAM_INT);
+
+                        if(!$stmt_avail->execute()){
+                            error_log("Failed to initialize leave records for Staff ID: " . $new_staff_id);
+                        }
+                    }
                     // Redirect to staff list page
                     header("location: ../staff/index.php?success=created");
                     exit();
@@ -166,7 +207,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     unset($pdo);
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>

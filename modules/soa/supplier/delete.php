@@ -2,6 +2,8 @@
 // Set the base path for includes
 $basePath = '../../../';
 
+session_start();
+
 // Check if the user has admin privileges
 if($_SESSION['position'] != 'Admin'){
     echo '<div class="col-md-10 ml-sm-auto px-4"><div class="alert alert-danger mt-3">You do not have permission to access this page.</div></div>';
@@ -27,7 +29,7 @@ if(isset($_POST["soa_id"]) && !empty($_POST["soa_id"])){
         // Attempt to execute the prepared statement
         if($stmt->execute()){
             // Records deleted successfully. Redirect to landing page
-            header("location: index.php?success=1");
+            header("location: index.php?success=deleted");
             exit();
         } else{
             echo "Oops! Something went wrong. Please try again later.";

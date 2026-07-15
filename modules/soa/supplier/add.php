@@ -11,9 +11,10 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION[
 
 $errors = [];
 $form_data = [
-    'invoice_number' => '', 'supplier_id' => '', 'po_id' => '', 'issue_date' => date('Y-m-d'),
+    'invoice_number' => '', 'supplier_id' => '', 'po_id' => '', 'client_id' => '', 'issue_date' => date('Y-m-d'),
     'payment_due_date' => date('Y-m-d', strtotime('+30 days')), 'purchase_description' => '',
-    'amount' => '', 'payment_status' => 'Pending', 'payment_method' => ''
+    'amount' => '', 'payment_status' => 'Pending', 'payment_method' => '',
+    'receipt_number' => '', 'amount_paid' => '', 'amount_pending' => '', 'credit_duration' => '', 'payment_date' => ''
 ];
 
 $preselected_supplier = isset($_GET['supplier_id']) ? $_GET['supplier_id'] : '';
@@ -31,6 +32,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     if(empty(trim($form_data["purchase_description"]))) $errors['purchase_description'] = "Please enter purchase description.";
     if(empty(trim($form_data["amount"])) || !is_numeric(trim($form_data["amount"])) || floatval(trim($form_data["amount"])) <= 0) $errors['amount'] = "Please enter a valid positive amount.";
     if(empty($form_data["payment_status"])) $errors['payment_status'] = "Please select payment status.";
+    if(empty($form_data["client_id"])) $errors['client_id'] = "Please select enduser.";
+    // receipt_number is optional — no validation required
+    if(empty(trim($form_data["payment_method"]))) $errors['payment_method'] = "Please enter payment method.";
+    if(trim($form_data["amount_paid"]) === '') $errors['amount_paid'] = "Please enter amount paid.";
+    // credit_duration is optional — no validation required
 
     // If PO selected, validate the invoice amount doesn't exceed remaining balance
     $po_id_val = !empty($form_data['po_id']) ? intval($form_data['po_id']) : null;
@@ -64,13 +70,25 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         try {
             $pdo->beginTransaction();
 
-            $sql = "INSERT INTO supplier_soa (invoice_number, supplier_id, po_id, issue_date, payment_due_date, purchase_description, amount, payment_status, payment_method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO supplier_soa (invoice_number, supplier_id, po_id, issue_date, payment_due_date, purchase_description, amount, payment_status, payment_method, created_by, credit_duration, client_id, amount_paid, receipt_number, payment_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $pdo->prepare($sql);
             $created_by = $_SESSION["staff_id"];
             $stmt->execute([
-                trim($form_data['invoice_number']), $form_data['supplier_id'], $po_id_val,
-                $form_data['issue_date'], $form_data['payment_due_date'], trim($form_data['purchase_description']),
-                trim($form_data['amount']), $form_data['payment_status'], trim($form_data['payment_method']), $created_by
+                trim($form_data['invoice_number']),
+                $form_data['supplier_id'],
+                $po_id_val,
+                $form_data['issue_date'],
+                $form_data['payment_due_date'],
+                trim($form_data['purchase_description']),
+                trim($form_data['amount']),
+                $form_data['payment_status'],
+                !empty($form_data['payment_method']) ? trim($form_data['payment_method']) : null,
+                $created_by,
+                !empty($form_data['credit_duration']) ? intval($form_data['credit_duration']) : null,
+                $form_data['client_id'],
+                trim($form_data['amount_paid']),
+                trim($form_data['receipt_number']),
+                ($form_data['payment_status'] == 'Paid' && !empty($form_data['payment_date'])) ? $form_data['payment_date'] : null
             ]);
 
             // Update PO status if linked
@@ -111,6 +129,12 @@ try {
     $suppliers = $pdo->query("SELECT supplier_id, supplier_name FROM suppliers ORDER BY supplier_name")->fetchAll();
 } catch(PDOException $e) {
     $suppliers = [];
+}
+
+try {
+    $endusers = $pdo->query("SELECT client_id, client_name FROM clients ORDER BY client_name")->fetchAll();
+} catch(PDOException $e) {
+    $endusers = [];
 }
 ?>
 
@@ -213,7 +237,7 @@ try {
                             <div class="section-header"><h4><i class="fas fa-truck"></i> Supplier & Invoice Details</h4></div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label class="form-label required">Invoice Number</label>
+                                    <label class="form-label required">Invoice Supplier</label>
                                     <input type="text" name="invoice_number" class="form-input <?php echo isset($errors['invoice_number']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['invoice_number']); ?>">
                                     <?php if(isset($errors['invoice_number'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['invoice_number']; ?></span><?php endif; ?>
                                 </div>
@@ -229,8 +253,19 @@ try {
                                     </select>
                                     <?php if(isset($errors['supplier_id'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['supplier_id']; ?></span><?php endif; ?>
                                 </div>
-                                <div class="form-group full-width">
-                                    <label class="form-label">Purchase Order Reference</label>
+                                 <div class="form-group">
+                                    <label class="form-label required">Enduser</label>
+                                    <select name="client_id" style="color: #000000ff;" class="form-select <?php echo isset($errors['client_id']) ? 'error' : ''; ?>">
+                                        <?php foreach($endusers as $enduser): ?>
+                                            <option value="<?php echo $enduser['client_id']; ?>" <?php echo ($enduser['client_id'] == $form_data['client_id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($enduser['client_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <?php if(isset($errors['client_id'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['client_id']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Kyrol Purchase Order Reference</label>
                                     <select name="po_id" id="poSelect" class="form-select <?php echo isset($errors['po_id']) ? 'error' : ''; ?>">
                                         <option value="">No PO (manual entry)</option>
                                     </select>
@@ -251,6 +286,7 @@ try {
                                         </div>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
 
@@ -258,14 +294,19 @@ try {
                             <div class="section-header"><h4><i class="fas fa-calendar-alt"></i> Dates</h4></div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label class="form-label required">Issue Date</label>
-                                    <input type="date" name="issue_date" class="form-input <?php echo isset($errors['issue_date']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['issue_date']); ?>">
+                                    <label class="form-label required">Invoice Issue Date</label>
+                                    <input type="date" name="issue_date" id="issueDateInput" class="form-input <?php echo isset($errors['issue_date']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['issue_date']); ?>">
                                     <?php if(isset($errors['issue_date'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['issue_date']; ?></span><?php endif; ?>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label required">Payment Due Date</label>
-                                    <input type="date" name="payment_due_date" class="form-input <?php echo isset($errors['payment_due_date']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['payment_due_date']); ?>">
+                                    <input type="date" name="payment_due_date" id="paymentDueDateInput" class="form-input <?php echo isset($errors['payment_due_date']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['payment_due_date']); ?>" readonly>
                                     <?php if(isset($errors['payment_due_date'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['payment_due_date']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Credit Duration (Months)</label>
+                                    <input type="number" name="credit_duration" id="creditDurationInput" class="form-input <?php echo isset($errors['credit_duration']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['credit_duration']); ?>">
+                                    <?php if(isset($errors['credit_duration'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['credit_duration']; ?></span><?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -274,22 +315,46 @@ try {
                             <div class="section-header"><h4><i class="fas fa-dollar-sign"></i> Financial Details</h4></div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label class="form-label required">Amount (RM)</label>
+                                    <label class="form-label required">Amount in Total(RM)</label>
                                     <input type="number" step="0.01" name="amount" id="amountInput" class="form-input <?php echo isset($errors['amount']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['amount']); ?>">
                                     <?php if(isset($errors['amount'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['amount']; ?></span><?php endif; ?>
                                 </div>
                                 <div class="form-group">
+                                    <label class="form-label">Receipt Number</label>
+                                    <input type="text" name="receipt_number" class="form-input <?php echo isset($errors['receipt_number']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['receipt_number']); ?>">
+                                    <?php if(isset($errors['receipt_number'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['receipt_number']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required">Amount Paid (RM)</label>
+                                    <input type="number" step="0.01" name="amount_paid" id="amountPaidInput" class="form-input <?php echo isset($errors['amount_paid']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['amount_paid']); ?>">
+                                    <?php if(isset($errors['amount_paid'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['amount_paid']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required">Amount Pending (RM)</label>
+                                    <input type="number" step="0.01" name="amount_pending" id="amountPendingInput" class="form-input <?php echo isset($errors['amount_pending']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['amount_pending']); ?>" readonly>
+                                    <?php if(isset($errors['amount_pending'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['amount_pending']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group">
                                     <label class="form-label required">Payment Status</label>
-                                    <select name="payment_status" class="form-select <?php echo isset($errors['payment_status']) ? 'error' : ''; ?>">
+                                    <select name="payment_status" id="paymentStatusSelect" class="form-select <?php echo isset($errors['payment_status']) ? 'error' : ''; ?>">
                                         <option value="Pending" <?php echo ($form_data['payment_status'] == 'Pending') ? 'selected' : ''; ?>>Pending</option>
                                         <option value="Paid" <?php echo ($form_data['payment_status'] == 'Paid') ? 'selected' : ''; ?>>Paid</option>
                                         <option value="Overdue" <?php echo ($form_data['payment_status'] == 'Overdue') ? 'selected' : ''; ?>>Overdue</option>
                                     </select>
                                     <?php if(isset($errors['payment_status'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['payment_status']; ?></span><?php endif; ?>
                                 </div>
-                                <div class="form-group full-width">
+                                <div class="form-group">
+                                    <label class="form-label">Payment Date</label>
+                                    <input type="date" name="payment_date" id="paymentDateInput" class="form-input <?php echo isset($errors['payment_date']) ? 'error' : ''; ?>" value="<?php echo htmlspecialchars($form_data['payment_date']); ?>" readonly>
+                                    <?php if(isset($errors['payment_date'])): ?><span class="error-message"><i class="fas fa-exclamation-circle"></i> <?php echo $errors['payment_date']; ?></span><?php endif; ?>
+                                </div>
+                                <div class="form-group">
                                     <label class="form-label">Payment Method (if paid)</label>
-                                    <input type="text" name="payment_method" class="form-input" value="<?php echo htmlspecialchars($form_data['payment_method']); ?>" placeholder="e.g., Bank Transfer, Cash">
+                                    <select name="payment_method" class="form-select <?php echo isset($errors['payment_method']) ? 'error' : ''; ?>">
+                                        <option value="Cheque" <?php echo ($form_data['payment_method'] == 'Cheque') ? 'selected' : ''; ?>>Cheque</option>
+                                        <option value="Bank Transfer" <?php echo ($form_data['payment_method'] == 'Bank Transfer') ? 'selected' : ''; ?>>Bank Transfer</option>
+                                        <option value="Cash" <?php echo ($form_data['payment_method'] == 'Cash') ? 'selected' : ''; ?>>Cash</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -319,6 +384,11 @@ try {
         const amountInput    = document.getElementById('amountInput');
         const descInput      = document.getElementById('descriptionInput');
         const lockedBadge    = document.getElementById('supplierLockedBadge');
+        const creditDurationInput = document.getElementById('creditDurationInput');
+        const paymentDueDateInput = document.getElementById('paymentDueDateInput');
+        const issueDateInput = document.getElementById('issueDateInput');
+        const amountPendingInput = document.getElementById('amountPendingInput');
+        const amountPaidInput = document.getElementById('amountPaidInput');
 
         let poLocked = false; // tracks whether supplier is locked by a PO selection
 
@@ -420,6 +490,63 @@ try {
         if (supplierSelect.value) {
             supplierSelect.dispatchEvent(new Event('change'));
         }
+
+        function calculatePendingAmount() {
+            const amountVal = amountInput.value;
+            const amountPaidVal = amountPaidInput.value;
+
+            if (amountVal !== '' && amountPaidVal !== '') {
+                const amount = parseFloat(amountVal);
+                let amountPaid = parseFloat(amountPaidVal);
+
+
+                if (amountPaid > amount) {
+                    amountPaid = amount;
+                    amountPaidInput.value = amount; // Update the UI field
+                }
+
+                amountPendingInput.value = (amount - amountPaid).toFixed(2);
+            } else {
+        
+                amountPendingInput.value = '';
+            }
+        }
+
+        amountInput.addEventListener('change', calculatePendingAmount);
+        amountPaidInput.addEventListener('change', calculatePendingAmount);
+
+
+        function calculateEndDate() {
+            if (issueDateInput.value!=='' && creditDurationInput.value!=='') {
+                const creditDuration = creditDurationInput.value;
+                const issueDate = issueDateInput.value;
+                const paymentDueDate = new Date(issueDate);
+                paymentDueDate.setMonth(paymentDueDate.getMonth() + parseInt(creditDuration));
+                paymentDueDateInput.value = paymentDueDate.toISOString().split('T')[0];
+            }
+        }
+
+        issueDateInput.addEventListener('change',calculateEndDate);
+        creditDurationInput.addEventListener('change',calculateEndDate);
+
+        const paymentStatusSelect = document.getElementById('paymentStatusSelect');
+        const paymentDateInput    = document.getElementById('paymentDateInput');
+
+        function togglePaymentDate() {
+            if (paymentStatusSelect.value === 'Paid') {
+                paymentDateInput.removeAttribute('readonly');
+                if (!paymentDateInput.value) {
+                    paymentDateInput.value = new Date().toISOString().split('T')[0];
+                }
+            } else {
+                paymentDateInput.setAttribute('readonly', 'true');
+                paymentDateInput.value = '';
+            }
+        }
+
+        paymentStatusSelect.addEventListener('change', togglePaymentDate);
+        togglePaymentDate(); // Run once on initialization
+
     });
     </script>
 </body>

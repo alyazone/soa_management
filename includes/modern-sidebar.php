@@ -26,38 +26,15 @@
 
             <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
 
-            <!-- 2. Staff Management -->
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/staff/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/staff/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-users"></i>
-                    <span>Staff Management</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/clients/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/clients/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-building"></i>
-                    <span>Client Management</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/suppliers/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/suppliers/') !== false) ? 'active' : ''; ?>">
+            <!-- 2. Supplier Management (Admin/Manager only) -->
+            <li class="nav-item has-submenu">
+                <?php $isSupplierGroup = (strpos($_SERVER['PHP_SELF'], '/modules/suppliers/') !== false || strpos($_SERVER['PHP_SELF'], '/modules/soa/supplier') !== false || strpos($_SERVER['PHP_SELF'], '/modules/purchase_orders/') !== false); ?>
+                <a href="#" class="nav-link <?php echo $isSupplierGroup ? 'active' : ''; ?>" data-toggle="submenu">
                     <i class="fas fa-truck"></i>
                     <span>Supplier Management</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/purchase_orders/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/purchase_orders/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span>Purchase Order</span>
-                </a>
-            </li>
-            <li class="nav-item has-submenu">
-                <a href="#" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/') !== false) ? 'active' : ''; ?>" data-toggle="submenu">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>SOA Management</span>
                     <i class="fas fa-chevron-right submenu-arrow"></i>
                 </a>
-                <ul class="submenu <?php echo $supplierActive ? 'show' : ''; ?>">
+                <ul class="submenu <?php echo $isSupplierGroup ? 'show' : ''; ?>">
                     <li>
                         <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/suppliers/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/suppliers/') !== false) ? 'active' : ''; ?>">
                             <i class="fas fa-list"></i>
@@ -78,60 +55,140 @@
                     </li>
                 </ul>
             </li>
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/experience/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/experience/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-briefcase"></i>
-                    <span>Pengalaman Syarikat</span>
-                </a>
-            </li>
-            <?php endif; ?>
 
-            <!-- 5. Outstation Leave -->
+            <!-- 3. Client Management (Admin/Manager only) -->
             <li class="nav-item has-submenu">
-                <a href="#" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>" data-toggle="submenu">
-                    <i class="fas fa-plane"></i>
-                    <span>Outstation Leave</span>
+                <?php $isClientGroup = (strpos($_SERVER['PHP_SELF'], '/modules/clients/') !== false || strpos($_SERVER['PHP_SELF'], '/modules/soa/client') !== false); ?>
+                <a href="#" class="nav-link <?php echo $isClientGroup ? 'active' : ''; ?>" data-toggle="submenu">
+                    <i class="fas fa-building"></i> 
+                    <span>Client Management</span>
                     <i class="fas fa-chevron-right submenu-arrow"></i>
                 </a>
-                <ul class="submenu <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'show' : ''; ?>">
+                <ul class="submenu <?php echo $isClientGroup ? 'show' : ''; ?>">
                     <li>
-                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/index.php" class="submenu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'index.php' && strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>">
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/clients/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/clients/') !== false) ? 'active' : ''; ?>">
                             <i class="fas fa-list"></i>
-                            <span>My Applications</span>
+                            <span>Client List</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/application_form.php" class="submenu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'application_form.php') ? 'active' : ''; ?>">
-                            <i class="fas fa-plus-circle"></i>
-                            <span>New Application</span>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/soa/client/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/soa/client') !== false) ? 'active' : ''; ?>">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>Client SOA</span>
                         </a>
                     </li>
-                    <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
-                    <li>
-                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/dashboard.php" class="submenu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'dashboard.php' && strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>">
-                            <i class="fas fa-chart-pie"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <?php endif; ?>
                 </ul>
             </li>
 
-            <!-- 6. Claim Management -->
+            <!-- 4. Company Experience (Admin/Manager only) -->
             <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/claims/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/claims/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-receipt"></i>
-                    <span>Claim Management</span>
+                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/experience/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/experience/') !== false) ? 'active' : ''; ?>">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Company Experience</span>
                 </a>
             </li>
 
-            <!-- 7. Inventory Management -->
-            <li class="nav-item">
-                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/inventory/index.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false) ? 'active' : ''; ?>">
-                    <i class="fas fa-boxes"></i>
-                    <span>Inventory Management</span>
+            <?php endif; ?>
+
+            <!-- 5. Staff Management (submenu visible to all; Staff List restricted to Admin/Manager) -->
+            <?php $isStaffGroup = (strpos($_SERVER['PHP_SELF'], '/modules/staff/') !== false || strpos($_SERVER['PHP_SELF'], '/modules/claims/') !== false || strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false); ?>
+            <li class="nav-item has-submenu">
+                <a href="#" class="nav-link <?php echo $isStaffGroup ? 'active' : ''; ?>" data-toggle="submenu">
+                    <i class="fas fa-users"></i>
+                    <span>Staff Management</span>
+                    <i class="fas fa-chevron-right submenu-arrow"></i>
                 </a>
+                <ul class="submenu <?php echo $isStaffGroup ? 'show' : ''; ?>">
+
+                    <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
+                    <!-- Staff List (Admin/Manager only) -->
+                    <li>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/staff/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/staff/') !== false) ? 'active' : ''; ?>">
+                            <i class="fas fa-id-badge"></i>
+                            <span>Staff List</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+
+                    <!-- Claim Management (all roles) -->
+                    <li>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/claims/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/claims/') !== false) ? 'active' : ''; ?>">
+                            <i class="fas fa-receipt"></i>
+                            <span>Claim Management</span>
+                        </a>
+                    </li>
+
+                    <!-- Inventory Management (all roles) -->
+                    <li>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/inventory/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/inventory/') !== false) ? 'active' : ''; ?>">
+                            <i class="fas fa-boxes"></i>
+                            <span>Inventory Management</span>
+                        </a>
+                    </li>
+
+                </ul>
             </li>
+
+            <!-- 6. Leave Management (parent; contains Leave and Outstation Leave) -->
+            <?php $isLeaveGroup = (strpos($_SERVER['PHP_SELF'], '/modules/leave/') !== false || strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false); ?>
+            <?php $isOutstationGroup = (strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false); ?>
+            <li class="nav-item has-submenu">
+                <a href="#" class="nav-link <?php echo $isLeaveGroup ? 'active' : ''; ?>" data-toggle="submenu">
+                    <i class="fa-solid fa-person-walking-arrow-right"></i>
+                    <span>Leave Management</span>
+                    <i class="fas fa-chevron-right submenu-arrow"></i>
+                </a>
+                <ul class="submenu <?php echo $isLeaveGroup ? 'show' : ''; ?>">
+
+                    <!-- Leave (all roles) -->
+                    <li>
+                        <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/leave/index.php" class="submenu-link <?php echo (strpos($_SERVER['PHP_SELF'], '/modules/leave/') !== false) ? 'active' : ''; ?>">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Leave</span>
+                        </a>
+                    </li>
+
+                    <!-- Outstation Leave — uses CSS checkbox hack since sidebar has no JS -->
+                    <!-- The checkbox is pre-checked by PHP when already on an outstation page -->
+                    <li class="submenu-item has-submenu-nested">
+                        <input
+                            type="checkbox"
+                            id="outstationToggle"
+                            class="submenu-nested-toggle"
+                            <?php echo $isOutstationGroup ? 'checked' : ''; ?>
+                        >
+                        <label for="outstationToggle" class="submenu-link submenu-nested-label <?php echo $isOutstationGroup ? 'active' : ''; ?>">
+                            <i class="fas fa-plane"></i>
+                            <span>Outstation Leave</span>
+                            <i class="fas fa-chevron-right submenu-arrow-nested"></i>
+                        </label>
+                        <ul class="submenu-nested">
+                            <li>
+                                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/index.php" class="submenu-nested-link <?php echo (basename($_SERVER['PHP_SELF']) == 'index.php' && strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>">
+                                    <i class="fas fa-list"></i>
+                                    <span>My Applications</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/application_form.php" class="submenu-nested-link <?php echo (basename($_SERVER['PHP_SELF']) == 'application_form.php') ? 'active' : ''; ?>">
+                                    <i class="fas fa-plus-circle"></i>
+                                    <span>New Application</span>
+                                </a>
+                            </li>
+                            <?php if($_SESSION["position"] == "Admin" || $_SESSION["position"] == "Manager"): ?>
+                            <li>
+                                <a href="<?php echo (isset($basePath) ? $basePath : ''); ?>modules/outstation/dashboard.php" class="submenu-nested-link <?php echo (basename($_SERVER['PHP_SELF']) == 'dashboard.php' && strpos($_SERVER['PHP_SELF'], '/modules/outstation/') !== false) ? 'active' : ''; ?>">
+                                    <i class="fas fa-chart-pie"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                        </ul>
+                    </li>
+
+                </ul>
+            </li>
+
         </ul>
     </nav>
     <div class="sidebar-footer">
@@ -148,7 +205,7 @@
             </div>
         </div>
         <div class="version-info">
-            <span>SOA Management v2.0</span>
+            <span>SOA Management v2.2</span>
         </div>
     </div>
 </div>
@@ -318,7 +375,8 @@
 }
 
 .submenu.show {
-    max-height: 300px;
+    /* Large enough to contain Leave + Outstation label + all 3 outstation items expanded */
+    max-height: 800px;
 }
 
 .sidebar-collapsed .submenu {
@@ -350,6 +408,75 @@
     width: 16px;
     text-align: center;
     font-size: 0.875rem;
+}
+
+/* ─── Nested submenu: CSS checkbox toggle (no JS needed) ─── */
+
+/* Hide the real checkbox visually but keep it functional */
+.submenu-nested-toggle {
+    display: none;
+}
+
+/* The label acts as the clickable "Outstation Leave" row */
+.submenu-nested-label {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Arrow rotation: default = pointing right */
+.submenu-arrow-nested {
+    margin-left: auto !important;
+    width: auto !important;
+    font-size: 0.75rem !important;
+    transition: var(--transition);
+}
+
+/* Arrow rotates when checkbox is checked */
+.submenu-nested-toggle:checked + .submenu-nested-label .submenu-arrow-nested {
+    transform: rotate(90deg);
+}
+
+/* Sub-submenu collapsed by default */
+.submenu-nested {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: var(--transition);
+    background: var(--gray-100);
+}
+
+/* Sub-submenu expands when checkbox is checked */
+.submenu-nested-toggle:checked ~ .submenu-nested {
+    max-height: 300px;
+}
+
+.submenu-nested-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1.5rem 0.65rem 4.5rem;
+    color: var(--gray-600);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    transition: var(--transition);
+}
+
+.submenu-nested-link:hover {
+    background: var(--gray-200);
+    color: var(--primary-color);
+}
+
+.submenu-nested-link.active {
+    background: var(--gray-200);
+    color: var(--primary-color);
+}
+
+.submenu-nested-link i {
+    width: 14px;
+    text-align: center;
+    font-size: 0.8125rem;
 }
 
 .sidebar-footer {
